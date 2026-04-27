@@ -5,6 +5,8 @@ import PatternSelect from './PatternSelect';
 import RangeSelect from './RangeSelect';
 import TempoSlider from './TempoSlider';
 import PlayButton from './PlayButton';
+import StopButton from './StopButton';
+import PauseResumeButton from './PauseResumeButton';
 import RepeatButton from './RepeatButton';
 
 export default function ExerciseControls() {
@@ -12,10 +14,22 @@ export default function ExerciseControls() {
   const [minMidi, setMinMidi] = useState(48);
   const [maxMidi, setMaxMidi] = useState(72);
   const [bpm, setBpm] = useState(80);
-  const { isPlaying, isLoading, samplerReady, play, stop, repeat, preload } = useExercise();
+  const {
+    isPlaying,
+    isPaused,
+    isLoading,
+    samplerReady,
+    play,
+    stop,
+    pause,
+    resume,
+    repeat,
+    preload,
+  } = useExercise();
 
   const pattern = PATTERNS.find((p) => p.id === patternId)!;
   const rangeInvalid = minMidi >= maxMidi;
+  const isActive = isPlaying || isPaused;
 
   const handlePlay = () => {
     if (rangeInvalid) return;
@@ -37,16 +51,19 @@ export default function ExerciseControls() {
         onMaxChange={setMaxMidi}
       />
       <TempoSlider value={bpm} onChange={setBpm} />
+
       <div className="pt-2 flex gap-3">
-        <PlayButton
-          isPlaying={isPlaying}
-          isLoading={isLoading}
-          disabled={rangeInvalid}
-          onPlay={handlePlay}
-          onStop={stop}
-        />
-        {isPlaying && <RepeatButton onRepeat={repeat} />}
+        {!isActive ? (
+          <PlayButton onPlay={handlePlay} disabled={rangeInvalid} isLoading={isLoading} />
+        ) : (
+          <>
+            <PauseResumeButton isPaused={isPaused} onPause={pause} onResume={resume} />
+            <StopButton onStop={stop} />
+            <RepeatButton onRepeat={repeat} />
+          </>
+        )}
       </div>
+
       {!samplerReady && !isLoading && (
         <button
           onClick={preload}

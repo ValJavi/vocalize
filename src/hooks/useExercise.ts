@@ -10,6 +10,7 @@ import type { ExerciseConfig } from '../domain/types';
 
 export function useExercise() {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [samplerReady, setSamplerReady] = useState(isSamplerReady());
   const handleRef = useRef<ExerciseHandle | null>(null);
@@ -27,10 +28,12 @@ export function useExercise() {
       handleRef.current = handle;
       setSamplerReady(true);
       setIsPlaying(true);
+      setIsPaused(false);
       handle.onFinish.then(() => {
         if (handleRef.current === handle) {
           handleRef.current = null;
           setIsPlaying(false);
+          setIsPaused(false);
         }
       });
     } finally {
@@ -42,6 +45,17 @@ export function useExercise() {
     stopActiveExercise();
     handleRef.current = null;
     setIsPlaying(false);
+    setIsPaused(false);
+  };
+
+  const pause = () => {
+    handleRef.current?.pause();
+    setIsPaused(true);
+  };
+
+  const resume = () => {
+    handleRef.current?.resume();
+    setIsPaused(false);
   };
 
   const repeat = () => {
@@ -58,5 +72,16 @@ export function useExercise() {
     }
   };
 
-  return { isPlaying, isLoading, samplerReady, play, stop, repeat, preload };
+  return {
+    isPlaying,
+    isPaused,
+    isLoading,
+    samplerReady,
+    play,
+    stop,
+    pause,
+    resume,
+    repeat,
+    preload,
+  };
 }

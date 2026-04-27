@@ -1,26 +1,12 @@
 export default function PlayButton({
-  isPlaying,
-  isLoading,
-  disabled,
   onPlay,
-  onStop,
+  disabled,
+  isLoading,
 }: {
-  isPlaying: boolean;
-  isLoading: boolean;
-  disabled: boolean;
   onPlay: () => void;
-  onStop: () => void;
+  disabled: boolean;
+  isLoading: boolean;
 }) {
-  if (isPlaying) {
-    return (
-      <button
-        onClick={onStop}
-        className="flex-1 bg-rose-600 hover:bg-rose-500 rounded py-3 font-medium transition"
-      >
-        Detener
-      </button>
-    );
-  }
   return (
     <button
       onClick={onPlay}

@@ -56,6 +56,8 @@ export function isSamplerReady(): boolean {
 
 export type ExerciseHandle = {
   stop: () => void;
+  pause: () => void;
+  resume: () => void;
   repeat: () => void;
   onFinish: Promise<void>;
 };
@@ -69,19 +71,40 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
   const gap = config.gapBeats * beat;
 
   let stopped = false;
+  let paused = false;
   let repeatPending = false;
   let currentTonic = config.range.min;
   let direction: 'up' | 'down' = 'up';
-
-  let stopResolve!: () => void;
-  const stopSignal = new Promise<void>((r) => {
-    stopResolve = r;
-  });
+  let abortController = new AbortController();
 
   let finishResolve!: () => void;
   const onFinish = new Promise<void>((r) => {
     finishResolve = r;
   });
+
+  const sleep = (ms: number): Promise<void> => {
+    const { signal } = abortController;
+    return new Promise<void>((resolve) => {
+      if (signal.aborted) {
+        resolve();
+        return;
+      }
+      const timer = setTimeout(() => {
+        signal.removeEventListener('abort', onAbort);
+        resolve();
+      }, ms);
+      const onAbort = () => {
+        clearTimeout(timer);
+        resolve();
+      };
+      signal.addEventListener('abort', onAbort, { once: true });
+    });
+  };
+
+  const wakeUp = () => {
+    abortController.abort();
+    abortController = new AbortController();
+  };
 
   const playRepetition = async (tonic: Midi): Promise<void> => {
     const startAudioTime = Tone.now() + 0.05;
@@ -89,7 +112,7 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
     let elapsedSec = 0;
 
     for (const step of config.pattern.steps) {
-      if (stopped) return;
+      if (stopped || paused) return;
       const dur = step.durationBeats * beat;
       s.triggerAttackRelease(
         Tone.Frequency(tonic + step.semitoneOffset, 'midi').toNote(),
@@ -99,7 +122,7 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
       elapsedSec += dur;
       const targetWallMs = startWallTime + elapsedSec * 1000;
       const sleepMs = Math.max(0, targetWallMs - Date.now());
-      await sleepUntilStopOrTimeout(sleepMs);
+      await sleep(sleepMs);
     }
   };
 
@@ -123,20 +146,21 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
     return false;
   };
 
-  const sleepUntilStopOrTimeout = (ms: number) =>
-    Promise.race([
-      new Promise<void>((r) => setTimeout(r, ms)),
-      stopSignal,
-    ]);
-
   const loop = async () => {
     while (!stopped) {
+      if (paused) {
+        await sleep(Number.MAX_SAFE_INTEGER);
+        continue;
+      }
+
       await playRepetition(currentTonic);
       if (stopped) break;
+      if (paused) continue;
 
       if (gap > 0) {
-        await sleepUntilStopOrTimeout(gap * 1000);
+        await sleep(gap * 1000);
         if (stopped) break;
+        if (paused) continue;
       }
 
       if (repeatPending) {
@@ -156,8 +180,19 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
     stop: () => {
       if (stopped) return;
       stopped = true;
-      stopResolve();
       s.releaseAll();
+      wakeUp();
+    },
+    pause: () => {
+      if (stopped || paused) return;
+      paused = true;
+      s.releaseAll();
+      wakeUp();
+    },
+    resume: () => {
+      if (stopped || !paused) return;
+      paused = false;
+      wakeUp();
     },
     repeat: () => {
       repeatPending = true;
