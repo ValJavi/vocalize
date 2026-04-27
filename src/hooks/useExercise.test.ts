@@ -143,7 +143,7 @@ describe('useExercise', () => {
   });
 
   test('onFinish resolution returns status to idle', async () => {
-    let resolveFinish!: () => void;
+    let resolveFinish: () => void = () => {};
     const finishPromise = new Promise<void>((r) => {
       resolveFinish = r;
     });
