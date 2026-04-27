@@ -26,6 +26,21 @@ const NEXO_NOTE_BEATS = 1;
 const LEAD_IN_NOTE_BEATS = 1;
 const TRANSITION_SILENCE_BEATS = 1;
 
+// If the user leaves the exercise paused this long without resuming, the
+// engine releases its resources and ends the run.
+const PAUSE_AUTO_STOP_MS = 5 * 60 * 1000;
+
+export type ExerciseHandle = {
+  stop: () => void;
+  pause: () => void;
+  resume: () => void;
+  repeat: () => void;
+  skip: () => void;
+  reverseDirection: () => void;
+  setBpm: (bpm: number) => void;
+  onFinish: Promise<void>;
+};
+
 let sampler: Tone.Sampler | null = null;
 let samplerLoading: Promise<Tone.Sampler> | null = null;
 let activeHandle: ExerciseHandle | null = null;
@@ -58,17 +73,6 @@ export function isSamplerReady(): boolean {
   return sampler !== null;
 }
 
-export type ExerciseHandle = {
-  stop: () => void;
-  pause: () => void;
-  resume: () => void;
-  repeat: () => void;
-  skip: () => void;
-  reverseDirection: () => void;
-  setBpm: (bpm: number) => void;
-  onFinish: Promise<void>;
-};
-
 export async function playExercise(config: ExerciseConfig): Promise<ExerciseHandle> {
   await Tone.start();
   const s = await getSampler();
@@ -87,7 +91,7 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
   let direction: 'up' | 'down' = 'up';
   let abortController = new AbortController();
 
-  let finishResolve!: () => void;
+  let finishResolve: () => void = () => {};
   const onFinish = new Promise<void>((r) => {
     finishResolve = r;
   });
@@ -209,8 +213,13 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
 
     while (!stopped) {
       if (paused) {
-        await sleep(Number.MAX_SAFE_INTEGER);
-        continue;
+        await sleep(PAUSE_AUTO_STOP_MS);
+        if (stopped) break;
+        if (!paused) continue;
+        // Pause expired without user interaction → auto-stop.
+        stopped = true;
+        s.releaseAll();
+        break;
       }
 
       if (skipRequested) {
@@ -256,6 +265,9 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
       }
     }
 
+    if (activeHandle === handle) {
+      activeHandle = null;
+    }
     finishResolve();
   };
 
@@ -293,6 +305,7 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
     },
     setBpm: (bpm: number) => {
       if (stopped) return;
+      if (!Number.isFinite(bpm) || bpm <= 0) return;
       currentBpm = bpm;
     },
     onFinish,
