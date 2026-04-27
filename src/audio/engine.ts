@@ -22,7 +22,9 @@ const SAMPLE_URLS: Record<string, string> = {
   A5: 'A5.mp3',
 };
 
-const SKIP_SILENCE_MS = 1000;
+const NEXO_NOTE_BEATS = 1;
+const LEAD_IN_NOTE_BEATS = 1;
+const TRANSITION_SILENCE_BEATS = 1;
 
 let sampler: Tone.Sampler | null = null;
 let samplerLoading: Promise<Tone.Sampler> | null = null;
@@ -121,6 +123,39 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
     abortController = new AbortController();
   };
 
+  const playReferenceTones = async (
+    tones: Midi[],
+    beatsPerTone: number,
+    trailingSilenceMs: number,
+  ): Promise<void> => {
+    const noteDur = beatsPerTone * beat;
+    const startAudioTime = Tone.now() + 0.05;
+    let elapsed = 0;
+
+    for (const tone of tones) {
+      if (stopped || paused) return;
+      s.triggerAttackRelease(
+        Tone.Frequency(tone, 'midi').toNote(),
+        noteDur,
+        startAudioTime + elapsed,
+      );
+      elapsed += noteDur;
+      await sleepUntilStopOrPause(noteDur * 1000);
+    }
+
+    if (trailingSilenceMs > 0 && !stopped && !paused) {
+      await sleep(trailingSilenceMs);
+    }
+  };
+
+  const transitionSilenceMs = TRANSITION_SILENCE_BEATS * beat * 1000;
+
+  const playLeadIn = (tonic: Midi) =>
+    playReferenceTones([tonic], LEAD_IN_NOTE_BEATS, transitionSilenceMs);
+
+  const playNexo = (fromTonic: Midi, toTonic: Midi) =>
+    playReferenceTones([fromTonic, toTonic], NEXO_NOTE_BEATS, transitionSilenceMs);
+
   const playRepetition = async (tonic: Midi): Promise<void> => {
     const startAudioTime = Tone.now() + 0.05;
     const startWallTime = Date.now();
@@ -164,19 +199,34 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
   };
 
   const consumeSkip = async (): Promise<'continue' | 'break'> => {
+    const fromTonic = currentTonic;
     skipRequested = false;
     repeatPending = false;
     if (!advanceTonic()) return 'break';
-    await sleepUntilStopOrPause(SKIP_SILENCE_MS);
+    await playNexo(fromTonic, currentTonic);
     if (stopped) return 'break';
     return 'continue';
   };
 
   const loop = async () => {
+    let leadInDone = false;
+
     while (!stopped) {
       if (paused) {
         await sleep(Number.MAX_SAFE_INTEGER);
         continue;
+      }
+
+      if (skipRequested) {
+        if ((await consumeSkip()) === 'break') break;
+        continue;
+      }
+
+      if (!leadInDone) {
+        await playLeadIn(currentTonic);
+        if (stopped) break;
+        if (paused) continue;
+        leadInDone = true;
       }
 
       await playRepetition(currentTonic);
@@ -188,21 +238,24 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
         continue;
       }
 
-      if (gap > 0) {
-        await sleep(gap * 1000);
-        if (stopped) break;
-        if (paused) continue;
-
-        if (skipRequested) {
-          if ((await consumeSkip()) === 'break') break;
-          continue;
-        }
-      }
-
       if (repeatPending) {
         repeatPending = false;
+        if (gap > 0) {
+          await sleep(gap * 1000);
+          if (stopped) break;
+          if (paused) continue;
+
+          if (skipRequested) {
+            if ((await consumeSkip()) === 'break') break;
+            continue;
+          }
+        }
       } else {
+        const fromTonic = currentTonic;
         if (!advanceTonic()) break;
+        await playNexo(fromTonic, currentTonic);
+        if (stopped) break;
+        if (paused) continue;
       }
     }
 
