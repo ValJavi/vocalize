@@ -9,6 +9,7 @@ export type Pattern = {
   id: string;
   name: string;
   steps: PatternStep[];
+  isCustom?: boolean;
 };
 
 export type Range = {
