@@ -5,13 +5,14 @@ import PatternSelect from './PatternSelect';
 import RangeSelect from './RangeSelect';
 import TempoSlider from './TempoSlider';
 import PlayButton from './PlayButton';
+import RepeatButton from './RepeatButton';
 
 export default function ExerciseControls() {
   const [patternId, setPatternId] = useState(PATTERNS[0].id);
   const [minMidi, setMinMidi] = useState(48);
   const [maxMidi, setMaxMidi] = useState(72);
   const [bpm, setBpm] = useState(80);
-  const { isPlaying, isLoading, samplerReady, play, stop, preload } = useExercise();
+  const { isPlaying, isLoading, samplerReady, play, stop, repeat, preload } = useExercise();
 
   const pattern = PATTERNS.find((p) => p.id === patternId)!;
   const rangeInvalid = minMidi >= maxMidi;
@@ -44,6 +45,7 @@ export default function ExerciseControls() {
           onPlay={handlePlay}
           onStop={stop}
         />
+        {isPlaying && <RepeatButton onRepeat={repeat} />}
       </div>
       {!samplerReady && !isLoading && (
         <button

@@ -44,6 +44,10 @@ export function useExercise() {
     setIsPlaying(false);
   };
 
+  const repeat = () => {
+    handleRef.current?.repeat();
+  };
+
   const preload = async () => {
     setIsLoading(true);
     try {
@@ -54,5 +58,5 @@ export function useExercise() {
     }
   };
 
-  return { isPlaying, isLoading, samplerReady, play, stop, preload };
+  return { isPlaying, isLoading, samplerReady, play, stop, repeat, preload };
 }

@@ -24,7 +24,7 @@ const SAMPLE_URLS: Record<string, string> = {
 
 let sampler: Tone.Sampler | null = null;
 let samplerLoading: Promise<Tone.Sampler> | null = null;
-let activePart: Tone.Part | null = null;
+let activeHandle: ExerciseHandle | null = null;
 
 async function getSampler(): Promise<Tone.Sampler> {
   if (sampler) return sampler;
@@ -54,39 +54,9 @@ export function isSamplerReady(): boolean {
   return sampler !== null;
 }
 
-type ScheduledNote = {
-  time: number;
-  midi: Midi;
-  duration: number;
-};
-
-function buildSchedule(config: ExerciseConfig): ScheduledNote[] {
-  const beat = 60 / config.bpm;
-  const tonics: Midi[] = [];
-  for (let t = config.range.min; t <= config.range.max; t++) tonics.push(t);
-  for (let t = config.range.max - 1; t > config.range.min; t--) tonics.push(t);
-
-  const notes: ScheduledNote[] = [];
-  let cursor = 0;
-
-  for (const tonic of tonics) {
-    for (const step of config.pattern.steps) {
-      const dur = step.durationBeats * beat;
-      notes.push({
-        time: cursor,
-        midi: tonic + step.semitoneOffset,
-        duration: dur,
-      });
-      cursor += dur;
-    }
-    cursor += config.gapBeats * beat;
-  }
-
-  return notes;
-}
-
 export type ExerciseHandle = {
   stop: () => void;
+  repeat: () => void;
   onFinish: Promise<void>;
 };
 
@@ -95,49 +65,113 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
   const s = await getSampler();
   stopActiveExercise();
 
-  const notes = buildSchedule(config);
-  const totalDuration = notes.length
-    ? notes[notes.length - 1].time + notes[notes.length - 1].duration
-    : 0;
+  const beat = 60 / config.bpm;
+  const gap = config.gapBeats * beat;
 
-  const part = new Tone.Part<ScheduledNote>((time, note) => {
-    s.triggerAttackRelease(
-      Tone.Frequency(note.midi, 'midi').toNote(),
-      note.duration,
-      time,
-    );
-  }, notes);
+  let stopped = false;
+  let repeatPending = false;
+  let currentTonic = config.range.min;
+  let direction: 'up' | 'down' = 'up';
 
-  part.start(0);
-  Tone.getTransport().start();
-  activePart = part;
-
-  const onFinish = new Promise<void>((resolve) => {
-    Tone.getTransport().scheduleOnce(() => {
-      if (activePart === part) {
-        stopActiveExercise();
-      }
-      resolve();
-    }, totalDuration + 0.1);
+  let stopResolve!: () => void;
+  const stopSignal = new Promise<void>((r) => {
+    stopResolve = r;
   });
 
-  return {
-    stop: () => stopActiveExercise(),
+  let finishResolve!: () => void;
+  const onFinish = new Promise<void>((r) => {
+    finishResolve = r;
+  });
+
+  const playRepetition = async (tonic: Midi): Promise<void> => {
+    const startAudioTime = Tone.now() + 0.05;
+    const startWallTime = Date.now();
+    let elapsedSec = 0;
+
+    for (const step of config.pattern.steps) {
+      if (stopped) return;
+      const dur = step.durationBeats * beat;
+      s.triggerAttackRelease(
+        Tone.Frequency(tonic + step.semitoneOffset, 'midi').toNote(),
+        dur,
+        startAudioTime + elapsedSec,
+      );
+      elapsedSec += dur;
+      const targetWallMs = startWallTime + elapsedSec * 1000;
+      const sleepMs = Math.max(0, targetWallMs - Date.now());
+      await sleepUntilStopOrTimeout(sleepMs);
+    }
+  };
+
+  const advanceTonic = (): boolean => {
+    if (direction === 'up') {
+      if (currentTonic < config.range.max) {
+        currentTonic++;
+        return true;
+      }
+      direction = 'down';
+      if (currentTonic > config.range.min) {
+        currentTonic--;
+        return true;
+      }
+      return false;
+    }
+    if (currentTonic > config.range.min) {
+      currentTonic--;
+      return true;
+    }
+    return false;
+  };
+
+  const sleepUntilStopOrTimeout = (ms: number) =>
+    Promise.race([
+      new Promise<void>((r) => setTimeout(r, ms)),
+      stopSignal,
+    ]);
+
+  const loop = async () => {
+    while (!stopped) {
+      await playRepetition(currentTonic);
+      if (stopped) break;
+
+      if (gap > 0) {
+        await sleepUntilStopOrTimeout(gap * 1000);
+        if (stopped) break;
+      }
+
+      if (repeatPending) {
+        repeatPending = false;
+      } else {
+        const more = advanceTonic();
+        if (!more) break;
+      }
+    }
+
+    finishResolve();
+  };
+
+  loop();
+
+  const handle: ExerciseHandle = {
+    stop: () => {
+      if (stopped) return;
+      stopped = true;
+      stopResolve();
+      s.releaseAll();
+    },
+    repeat: () => {
+      repeatPending = true;
+    },
     onFinish,
   };
+
+  activeHandle = handle;
+  return handle;
 }
 
 export function stopActiveExercise(): void {
-  if (activePart) {
-    activePart.stop();
-    activePart.dispose();
-    activePart = null;
-  }
-  const transport = Tone.getTransport();
-  transport.stop();
-  transport.cancel();
-  transport.position = 0;
-  if (sampler) {
-    sampler.releaseAll();
+  if (activeHandle) {
+    activeHandle.stop();
+    activeHandle = null;
   }
 }
