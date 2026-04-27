@@ -12,31 +12,29 @@ export function useCustomPatterns() {
     setPatterns(loadCustomPatterns());
   }, []);
 
-  const persist = useCallback((next: CustomPattern[]) => {
-    saveCustomPatterns(next);
-    setPatterns(next);
+  const add = useCallback((pattern: CustomPattern) => {
+    setPatterns((prev) => {
+      const next = [...prev, pattern];
+      saveCustomPatterns(next);
+      return next;
+    });
   }, []);
 
-  const add = useCallback(
-    (pattern: CustomPattern) => {
-      persist([...patterns, pattern]);
-    },
-    [patterns, persist],
-  );
+  const update = useCallback((id: string, pattern: CustomPattern) => {
+    setPatterns((prev) => {
+      const next = prev.map((p) => (p.id === id ? pattern : p));
+      saveCustomPatterns(next);
+      return next;
+    });
+  }, []);
 
-  const update = useCallback(
-    (id: string, pattern: CustomPattern) => {
-      persist(patterns.map((p) => (p.id === id ? pattern : p)));
-    },
-    [patterns, persist],
-  );
-
-  const remove = useCallback(
-    (id: string) => {
-      persist(patterns.filter((p) => p.id !== id));
-    },
-    [patterns, persist],
-  );
+  const remove = useCallback((id: string) => {
+    setPatterns((prev) => {
+      const next = prev.filter((p) => p.id !== id);
+      saveCustomPatterns(next);
+      return next;
+    });
+  }, []);
 
   return { patterns, add, update, remove };
 }

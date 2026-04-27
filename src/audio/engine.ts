@@ -114,6 +114,21 @@ export async function previewPattern(
     finishResolve = r;
   });
 
+  const sleep = (ms: number): Promise<void> =>
+    new Promise<void>((resolve) => {
+      if (stopped) {
+        resolve();
+        return;
+      }
+      const timer = setTimeout(() => {
+        resolve();
+      }, ms);
+      stopSignal.then(() => {
+        clearTimeout(timer);
+        resolve();
+      });
+    });
+
   const run = async () => {
     let nextStart = Tone.now() + 0.05;
     for (const step of steps) {
@@ -125,11 +140,7 @@ export async function previewPattern(
         nextStart,
       );
       nextStart += dur;
-      const sleepMs = dur * 1000;
-      await Promise.race([
-        new Promise<void>((r) => setTimeout(r, sleepMs)),
-        stopSignal,
-      ]);
+      await sleep(dur * 1000);
     }
     if (activePreview && activePreview.onFinish === onFinish) {
       activePreview = null;

@@ -112,8 +112,8 @@ export default function PatternBuilder({
     stopActivePreview();
     const patternSteps = steps.map(editableToStep);
     const trimmedName = name.trim();
-    const result: CustomPattern = isEdit
-      ? { ...initialPattern!, name: trimmedName, steps: patternSteps }
+    const result: CustomPattern = initialPattern
+      ? { ...initialPattern, name: trimmedName, steps: patternSteps }
       : buildCustomPattern(trimmedName, patternSteps);
     onSave(result);
   };
