@@ -1,5 +1,6 @@
 import * as Tone from 'tone';
 import type { ExerciseConfig, Midi } from '../domain/types';
+import { advanceTonic as computeNextTonic, type Direction } from '../domain/modulation';
 
 const SAMPLE_BASE_URL = '/samples/piano/';
 const SAMPLE_URLS: Record<string, string> = {
@@ -88,7 +89,7 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
   let repeatPending = false;
   let skipRequested = false;
   let currentTonic = config.range.min;
-  let direction: 'up' | 'down' = 'up';
+  let direction: Direction = 'up';
   let abortController = new AbortController();
 
   let finishResolve: () => void = () => {};
@@ -179,23 +180,11 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
   };
 
   const advanceTonic = (): boolean => {
-    if (direction === 'up') {
-      if (currentTonic < config.range.max) {
-        currentTonic++;
-        return true;
-      }
-      direction = 'down';
-      if (currentTonic > config.range.min) {
-        currentTonic--;
-        return true;
-      }
-      return false;
-    }
-    if (currentTonic > config.range.min) {
-      currentTonic--;
-      return true;
-    }
-    return false;
+    const next = computeNextTonic({ tonic: currentTonic, direction }, config.range);
+    if (!next) return false;
+    currentTonic = next.tonic;
+    direction = next.direction;
+    return true;
   };
 
   const consumeSkip = async (): Promise<'continue' | 'break'> => {

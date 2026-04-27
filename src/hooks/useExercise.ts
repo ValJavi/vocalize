@@ -47,12 +47,14 @@ export function useExercise() {
   };
 
   const pause = () => {
-    handleRef.current?.pause();
+    if (!handleRef.current) return;
+    handleRef.current.pause();
     setStatus('paused');
   };
 
   const resume = () => {
-    handleRef.current?.resume();
+    if (!handleRef.current) return;
+    handleRef.current.resume();
     setStatus('playing');
   };
 
