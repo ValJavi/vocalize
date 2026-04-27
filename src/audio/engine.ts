@@ -65,6 +65,7 @@ export type ExerciseHandle = {
   repeat: () => void;
   skip: () => void;
   reverseDirection: () => void;
+  setBpm: (bpm: number) => void;
   onFinish: Promise<void>;
 };
 
@@ -73,8 +74,10 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
   const s = await getSampler();
   stopActiveExercise();
 
-  const beat = 60 / config.bpm;
-  const gap = config.gapBeats * beat;
+  let currentBpm = config.bpm;
+  const beatSec = () => 60 / currentBpm;
+  const gapSec = () => config.gapBeats * beatSec();
+  const transitionSilenceMs = () => TRANSITION_SILENCE_BEATS * beatSec() * 1000;
 
   let stopped = false;
   let paused = false;
@@ -126,55 +129,48 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
   const playReferenceTones = async (
     tones: Midi[],
     beatsPerTone: number,
-    trailingSilenceMs: number,
   ): Promise<void> => {
-    const noteDur = beatsPerTone * beat;
-    const startAudioTime = Tone.now() + 0.05;
-    let elapsed = 0;
+    let nextStart = Tone.now() + 0.05;
 
     for (const tone of tones) {
       if (stopped || paused) return;
+      const noteDur = beatsPerTone * beatSec();
       s.triggerAttackRelease(
         Tone.Frequency(tone, 'midi').toNote(),
         noteDur,
-        startAudioTime + elapsed,
+        nextStart,
       );
-      elapsed += noteDur;
+      nextStart += noteDur;
       await sleepUntilStopOrPause(noteDur * 1000);
     }
 
-    if (trailingSilenceMs > 0 && !stopped && !paused) {
-      await sleep(trailingSilenceMs);
+    if (!stopped && !paused) {
+      const silenceMs = transitionSilenceMs();
+      if (silenceMs > 0) await sleep(silenceMs);
     }
   };
 
-  const transitionSilenceMs = TRANSITION_SILENCE_BEATS * beat * 1000;
-
   const playLeadIn = (tonic: Midi) =>
-    playReferenceTones([tonic], LEAD_IN_NOTE_BEATS, transitionSilenceMs);
+    playReferenceTones([tonic], LEAD_IN_NOTE_BEATS);
 
   const playNexo = (fromTonic: Midi, toTonic: Midi) =>
-    playReferenceTones([fromTonic, toTonic], NEXO_NOTE_BEATS, transitionSilenceMs);
+    playReferenceTones([fromTonic, toTonic], NEXO_NOTE_BEATS);
 
   const playRepetition = async (tonic: Midi): Promise<void> => {
-    const startAudioTime = Tone.now() + 0.05;
-    const startWallTime = Date.now();
-    let elapsedSec = 0;
+    let nextStart = Tone.now() + 0.05;
 
     for (const step of config.pattern.steps) {
       if (stopped || paused) return;
       if (skipRequested) return;
 
-      const dur = step.durationBeats * beat;
+      const dur = step.durationBeats * beatSec();
       s.triggerAttackRelease(
         Tone.Frequency(tonic + step.semitoneOffset, 'midi').toNote(),
         dur,
-        startAudioTime + elapsedSec,
+        nextStart,
       );
-      elapsedSec += dur;
-      const targetWallMs = startWallTime + elapsedSec * 1000;
-      const sleepMs = Math.max(0, targetWallMs - Date.now());
-      await sleepUntilStopOrPause(sleepMs);
+      nextStart += dur;
+      await sleepUntilStopOrPause(dur * 1000);
     }
   };
 
@@ -240,8 +236,9 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
 
       if (repeatPending) {
         repeatPending = false;
-        if (gap > 0) {
-          await sleep(gap * 1000);
+        const gapMs = gapSec() * 1000;
+        if (gapMs > 0) {
+          await sleep(gapMs);
           if (stopped) break;
           if (paused) continue;
 
@@ -293,6 +290,10 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
     reverseDirection: () => {
       if (stopped) return;
       direction = direction === 'up' ? 'down' : 'up';
+    },
+    setBpm: (bpm: number) => {
+      if (stopped) return;
+      currentBpm = bpm;
     },
     onFinish,
   };

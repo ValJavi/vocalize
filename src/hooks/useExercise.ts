@@ -70,6 +70,10 @@ export function useExercise() {
     handleRef.current?.reverseDirection();
   };
 
+  const setBpm = (bpm: number) => {
+    handleRef.current?.setBpm(bpm);
+  };
+
   const preload = async () => {
     setIsLoading(true);
     try {
@@ -92,6 +96,7 @@ export function useExercise() {
     repeat,
     skip,
     reverseDirection,
+    setBpm,
     preload,
   };
 }

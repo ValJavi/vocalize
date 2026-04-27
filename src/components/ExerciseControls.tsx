@@ -28,6 +28,7 @@ export default function ExerciseControls() {
     repeat,
     skip,
     reverseDirection,
+    setBpm: pushBpmToEngine,
     preload,
   } = useExercise();
 
@@ -47,14 +48,21 @@ export default function ExerciseControls() {
 
   return (
     <div className="space-y-5">
-      <PatternSelect value={patternId} onChange={setPatternId} />
+      <PatternSelect value={patternId} onChange={setPatternId} disabled={isActive} />
       <RangeSelect
         min={minMidi}
         max={maxMidi}
         onMinChange={setMinMidi}
         onMaxChange={setMaxMidi}
+        disabled={isActive}
       />
-      <TempoSlider value={bpm} onChange={setBpm} />
+      <TempoSlider
+        value={bpm}
+        onChange={(next) => {
+          setBpm(next);
+          pushBpmToEngine(next);
+        }}
+      />
 
       <div className="pt-2 space-y-3">
         {!isActive ? (
