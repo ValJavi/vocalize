@@ -9,6 +9,7 @@ import StopButton from './StopButton';
 import PauseResumeButton from './PauseResumeButton';
 import RepeatButton from './RepeatButton';
 import SkipButton from './SkipButton';
+import DirectionButton from './DirectionButton';
 
 export default function ExerciseControls() {
   const [patternId, setPatternId] = useState(PATTERNS[0].id);
@@ -26,6 +27,7 @@ export default function ExerciseControls() {
     resume,
     repeat,
     skip,
+    reverseDirection,
     preload,
   } = useExercise();
 
@@ -68,6 +70,9 @@ export default function ExerciseControls() {
             <div className="flex gap-3">
               <RepeatButton onRepeat={repeat} />
               {!isPaused && <SkipButton onSkip={skip} />}
+            </div>
+            <div className="flex gap-3">
+              <DirectionButton onReverse={reverseDirection} />
             </div>
           </>
         )}

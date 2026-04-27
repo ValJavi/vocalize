@@ -62,6 +62,7 @@ export type ExerciseHandle = {
   resume: () => void;
   repeat: () => void;
   skip: () => void;
+  reverseDirection: () => void;
   onFinish: Promise<void>;
 };
 
@@ -235,6 +236,10 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
       if (stopped || paused) return;
       skipRequested = true;
       wakeUp();
+    },
+    reverseDirection: () => {
+      if (stopped) return;
+      direction = direction === 'up' ? 'down' : 'up';
     },
     onFinish,
   };

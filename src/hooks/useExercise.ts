@@ -66,6 +66,10 @@ export function useExercise() {
     handleRef.current?.skip();
   };
 
+  const reverseDirection = () => {
+    handleRef.current?.reverseDirection();
+  };
+
   const preload = async () => {
     setIsLoading(true);
     try {
@@ -87,6 +91,7 @@ export function useExercise() {
     resume,
     repeat,
     skip,
+    reverseDirection,
     preload,
   };
 }
