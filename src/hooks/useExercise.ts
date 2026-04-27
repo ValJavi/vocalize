@@ -62,6 +62,10 @@ export function useExercise() {
     handleRef.current?.repeat();
   };
 
+  const skip = () => {
+    handleRef.current?.skip();
+  };
+
   const preload = async () => {
     setIsLoading(true);
     try {
@@ -82,6 +86,7 @@ export function useExercise() {
     pause,
     resume,
     repeat,
+    skip,
     preload,
   };
 }

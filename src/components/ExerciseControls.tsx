@@ -8,6 +8,7 @@ import PlayButton from './PlayButton';
 import StopButton from './StopButton';
 import PauseResumeButton from './PauseResumeButton';
 import RepeatButton from './RepeatButton';
+import SkipButton from './SkipButton';
 
 export default function ExerciseControls() {
   const [patternId, setPatternId] = useState(PATTERNS[0].id);
@@ -24,6 +25,7 @@ export default function ExerciseControls() {
     pause,
     resume,
     repeat,
+    skip,
     preload,
   } = useExercise();
 
@@ -52,14 +54,21 @@ export default function ExerciseControls() {
       />
       <TempoSlider value={bpm} onChange={setBpm} />
 
-      <div className="pt-2 flex gap-3">
+      <div className="pt-2 space-y-3">
         {!isActive ? (
-          <PlayButton onPlay={handlePlay} disabled={rangeInvalid} isLoading={isLoading} />
+          <div className="flex gap-3">
+            <PlayButton onPlay={handlePlay} disabled={rangeInvalid} isLoading={isLoading} />
+          </div>
         ) : (
           <>
-            <PauseResumeButton isPaused={isPaused} onPause={pause} onResume={resume} />
-            <StopButton onStop={stop} />
-            <RepeatButton onRepeat={repeat} />
+            <div className="flex gap-3">
+              <PauseResumeButton isPaused={isPaused} onPause={pause} onResume={resume} />
+              <StopButton onStop={stop} />
+            </div>
+            <div className="flex gap-3">
+              <RepeatButton onRepeat={repeat} />
+              {!isPaused && <SkipButton onSkip={skip} />}
+            </div>
           </>
         )}
       </div>
