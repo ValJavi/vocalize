@@ -1,7 +1,7 @@
 import * as Tone from 'tone';
 import type { ExerciseConfig, Midi } from '../domain/types';
 
-const SAMPLE_BASE_URL = 'https://tonejs.github.io/audio/salamander/';
+const SAMPLE_BASE_URL = '/samples/piano/';
 const SAMPLE_URLS: Record<string, string> = {
   A1: 'A1.mp3',
   C2: 'C2.mp3',
