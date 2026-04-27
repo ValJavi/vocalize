@@ -8,9 +8,10 @@ import {
 } from '../audio/engine';
 import type { ExerciseConfig } from '../domain/types';
 
+export type ExerciseStatus = 'idle' | 'playing' | 'paused';
+
 export function useExercise() {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
+  const [status, setStatus] = useState<ExerciseStatus>('idle');
   const [isLoading, setIsLoading] = useState(false);
   const [samplerReady, setSamplerReady] = useState(isSamplerReady());
   const handleRef = useRef<ExerciseHandle | null>(null);
@@ -27,13 +28,11 @@ export function useExercise() {
       const handle = await playExercise(config);
       handleRef.current = handle;
       setSamplerReady(true);
-      setIsPlaying(true);
-      setIsPaused(false);
+      setStatus('playing');
       handle.onFinish.then(() => {
         if (handleRef.current === handle) {
           handleRef.current = null;
-          setIsPlaying(false);
-          setIsPaused(false);
+          setStatus('idle');
         }
       });
     } finally {
@@ -44,18 +43,17 @@ export function useExercise() {
   const stop = () => {
     stopActiveExercise();
     handleRef.current = null;
-    setIsPlaying(false);
-    setIsPaused(false);
+    setStatus('idle');
   };
 
   const pause = () => {
     handleRef.current?.pause();
-    setIsPaused(true);
+    setStatus('paused');
   };
 
   const resume = () => {
     handleRef.current?.resume();
-    setIsPaused(false);
+    setStatus('playing');
   };
 
   const repeat = () => {
@@ -85,8 +83,7 @@ export function useExercise() {
   };
 
   return {
-    isPlaying,
-    isPaused,
+    status,
     isLoading,
     samplerReady,
     play,

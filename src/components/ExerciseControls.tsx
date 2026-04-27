@@ -17,8 +17,7 @@ export default function ExerciseControls() {
   const [maxMidi, setMaxMidi] = useState(72);
   const [bpm, setBpm] = useState(80);
   const {
-    isPlaying,
-    isPaused,
+    status,
     isLoading,
     samplerReady,
     play,
@@ -28,13 +27,14 @@ export default function ExerciseControls() {
     repeat,
     skip,
     reverseDirection,
-    setBpm: pushBpmToEngine,
+    setBpm: setEngineBpm,
     preload,
   } = useExercise();
 
   const pattern = PATTERNS.find((p) => p.id === patternId)!;
   const rangeInvalid = minMidi >= maxMidi;
-  const isActive = isPlaying || isPaused;
+  const isActive = status !== 'idle';
+  const isPaused = status === 'paused';
 
   const handlePlay = () => {
     if (rangeInvalid) return;
@@ -60,7 +60,7 @@ export default function ExerciseControls() {
         value={bpm}
         onChange={(next) => {
           setBpm(next);
-          pushBpmToEngine(next);
+          setEngineBpm(next);
         }}
       />
 
