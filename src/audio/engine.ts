@@ -1,5 +1,5 @@
 import * as Tone from 'tone';
-import type { ExerciseConfig, Midi } from '../domain/types';
+import type { ExerciseConfig, Midi, PatternStep } from '../domain/types';
 import { advanceTonic as computeNextTonic, type Direction } from '../domain/modulation';
 
 const SAMPLE_BASE_URL = '/samples/piano/';
@@ -74,10 +74,90 @@ export function isSamplerReady(): boolean {
   return sampler !== null;
 }
 
+export type PreviewHandle = {
+  stop: () => void;
+  onFinish: Promise<void>;
+};
+
+let activePreview: PreviewHandle | null = null;
+
+export function stopActivePreview(): void {
+  if (activePreview) {
+    activePreview.stop();
+    activePreview = null;
+  }
+}
+
+// Plays a single pattern once at a fixed tonic, no modulation, no nexo.
+// Used by the pattern builder so the user can hear what they are
+// composing before saving it.
+export async function previewPattern(
+  steps: PatternStep[],
+  tonic: Midi,
+  bpm: number,
+): Promise<PreviewHandle> {
+  await Tone.start();
+  const s = await getSampler();
+  stopActiveExercise();
+  stopActivePreview();
+
+  const beat = 60 / bpm;
+  let stopped = false;
+
+  let stopResolve: () => void = () => {};
+  const stopSignal = new Promise<void>((r) => {
+    stopResolve = r;
+  });
+
+  let finishResolve: () => void = () => {};
+  const onFinish = new Promise<void>((r) => {
+    finishResolve = r;
+  });
+
+  const run = async () => {
+    let nextStart = Tone.now() + 0.05;
+    for (const step of steps) {
+      if (stopped) break;
+      const dur = step.durationBeats * beat;
+      s.triggerAttackRelease(
+        Tone.Frequency(tonic + step.semitoneOffset, 'midi').toNote(),
+        dur,
+        nextStart,
+      );
+      nextStart += dur;
+      const sleepMs = dur * 1000;
+      await Promise.race([
+        new Promise<void>((r) => setTimeout(r, sleepMs)),
+        stopSignal,
+      ]);
+    }
+    if (activePreview && activePreview.onFinish === onFinish) {
+      activePreview = null;
+    }
+    finishResolve();
+  };
+
+  run();
+
+  const handle: PreviewHandle = {
+    stop: () => {
+      if (stopped) return;
+      stopped = true;
+      s.releaseAll();
+      stopResolve();
+    },
+    onFinish,
+  };
+
+  activePreview = handle;
+  return handle;
+}
+
 export async function playExercise(config: ExerciseConfig): Promise<ExerciseHandle> {
   await Tone.start();
   const s = await getSampler();
   stopActiveExercise();
+  stopActivePreview();
 
   let currentBpm = config.bpm;
   const beatSec = () => 60 / currentBpm;
