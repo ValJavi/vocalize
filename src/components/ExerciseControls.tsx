@@ -5,16 +5,36 @@ import PatternSelect from './PatternSelect';
 import RangeSelect from './RangeSelect';
 import TempoSlider from './TempoSlider';
 import PlayButton from './PlayButton';
+import StopButton from './StopButton';
+import PauseResumeButton from './PauseResumeButton';
+import RepeatButton from './RepeatButton';
+import SkipButton from './SkipButton';
+import DirectionButton from './DirectionButton';
 
 export default function ExerciseControls() {
   const [patternId, setPatternId] = useState(PATTERNS[0].id);
   const [minMidi, setMinMidi] = useState(48);
   const [maxMidi, setMaxMidi] = useState(72);
   const [bpm, setBpm] = useState(80);
-  const { isPlaying, isLoading, samplerReady, play, stop, preload } = useExercise();
+  const {
+    status,
+    isLoading,
+    samplerReady,
+    play,
+    stop,
+    pause,
+    resume,
+    repeat,
+    skip,
+    reverseDirection,
+    setBpm: setEngineBpm,
+    preload,
+  } = useExercise();
 
   const pattern = PATTERNS.find((p) => p.id === patternId)!;
   const rangeInvalid = minMidi >= maxMidi;
+  const isActive = status !== 'idle';
+  const isPaused = status === 'paused';
 
   const handlePlay = () => {
     if (rangeInvalid) return;
@@ -28,23 +48,44 @@ export default function ExerciseControls() {
 
   return (
     <div className="space-y-5">
-      <PatternSelect value={patternId} onChange={setPatternId} />
+      <PatternSelect value={patternId} onChange={setPatternId} disabled={isActive} />
       <RangeSelect
         min={minMidi}
         max={maxMidi}
         onMinChange={setMinMidi}
         onMaxChange={setMaxMidi}
+        disabled={isActive}
       />
-      <TempoSlider value={bpm} onChange={setBpm} />
-      <div className="pt-2 flex gap-3">
-        <PlayButton
-          isPlaying={isPlaying}
-          isLoading={isLoading}
-          disabled={rangeInvalid}
-          onPlay={handlePlay}
-          onStop={stop}
-        />
+      <TempoSlider
+        value={bpm}
+        onChange={(next) => {
+          setBpm(next);
+          setEngineBpm(next);
+        }}
+      />
+
+      <div className="pt-2 space-y-3">
+        {!isActive ? (
+          <div className="flex gap-3">
+            <PlayButton onPlay={handlePlay} disabled={rangeInvalid} isLoading={isLoading} />
+          </div>
+        ) : (
+          <>
+            <div className="flex gap-3">
+              <PauseResumeButton isPaused={isPaused} onPause={pause} onResume={resume} />
+              <StopButton onStop={stop} />
+            </div>
+            <div className="flex gap-3">
+              <RepeatButton onRepeat={repeat} />
+              {!isPaused && <SkipButton onSkip={skip} />}
+            </div>
+            <div className="flex gap-3">
+              <DirectionButton onReverse={reverseDirection} />
+            </div>
+          </>
+        )}
       </div>
+
       {!samplerReady && !isLoading && (
         <button
           onClick={preload}

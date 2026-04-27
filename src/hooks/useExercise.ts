@@ -8,8 +8,10 @@ import {
 } from '../audio/engine';
 import type { ExerciseConfig } from '../domain/types';
 
+export type ExerciseStatus = 'idle' | 'playing' | 'paused';
+
 export function useExercise() {
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [status, setStatus] = useState<ExerciseStatus>('idle');
   const [isLoading, setIsLoading] = useState(false);
   const [samplerReady, setSamplerReady] = useState(isSamplerReady());
   const handleRef = useRef<ExerciseHandle | null>(null);
@@ -26,11 +28,11 @@ export function useExercise() {
       const handle = await playExercise(config);
       handleRef.current = handle;
       setSamplerReady(true);
-      setIsPlaying(true);
+      setStatus('playing');
       handle.onFinish.then(() => {
         if (handleRef.current === handle) {
           handleRef.current = null;
-          setIsPlaying(false);
+          setStatus('idle');
         }
       });
     } finally {
@@ -41,7 +43,35 @@ export function useExercise() {
   const stop = () => {
     stopActiveExercise();
     handleRef.current = null;
-    setIsPlaying(false);
+    setStatus('idle');
+  };
+
+  const pause = () => {
+    if (!handleRef.current) return;
+    handleRef.current.pause();
+    setStatus('paused');
+  };
+
+  const resume = () => {
+    if (!handleRef.current) return;
+    handleRef.current.resume();
+    setStatus('playing');
+  };
+
+  const repeat = () => {
+    handleRef.current?.repeat();
+  };
+
+  const skip = () => {
+    handleRef.current?.skip();
+  };
+
+  const reverseDirection = () => {
+    handleRef.current?.reverseDirection();
+  };
+
+  const setBpm = (bpm: number) => {
+    handleRef.current?.setBpm(bpm);
   };
 
   const preload = async () => {
@@ -54,5 +84,18 @@ export function useExercise() {
     }
   };
 
-  return { isPlaying, isLoading, samplerReady, play, stop, preload };
+  return {
+    status,
+    isLoading,
+    samplerReady,
+    play,
+    stop,
+    pause,
+    resume,
+    repeat,
+    skip,
+    reverseDirection,
+    setBpm,
+    preload,
+  };
 }
