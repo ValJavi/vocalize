@@ -209,21 +209,27 @@ export async function playExercise(
   let direction: Direction = 'up';
   let abortController = new AbortController();
 
-  const setDirection = (next: Direction) => {
-    if (next === direction) return;
+  // Helpers gate notifications by equality with the previous value so a
+  // no-op assignment (e.g. advanceTonic returning the same direction)
+  // does not spam the consumer. The optional force flag is for the
+  // initial seed below: the consumer hasn't seen the value yet, so it
+  // needs the first notification even though no change has happened.
+  const setDirection = (next: Direction, force = false) => {
+    if (!force && next === direction) return;
     direction = next;
     options.onDirectionChange?.(next);
   };
 
-  const setTonic = (next: Midi) => {
-    if (next === currentTonic) return;
+  const setTonic = (next: Midi, force = false) => {
+    if (!force && next === currentTonic) return;
     currentTonic = next;
     options.onTonicChange?.(next);
   };
 
-  // Initial tonic notification so the UI can render the first rep's
-  // sequence before any audio starts.
-  options.onTonicChange?.(currentTonic);
+  // Initial state notification so the UI can render the first rep's
+  // sequence and direction indicator before any audio starts.
+  setTonic(currentTonic, true);
+  setDirection(direction, true);
 
   let finishResolve: () => void = () => {};
   const onFinish = new Promise<void>((r) => {

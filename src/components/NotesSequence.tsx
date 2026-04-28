@@ -22,6 +22,7 @@ export default function NotesSequence({
         return (
           <span
             key={i}
+            aria-current={isActive ? 'true' : undefined}
             className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
               isActive
                 ? 'bg-emerald-500 text-slate-900'

@@ -65,10 +65,9 @@ export default function PianoKeyboard({
           return (
             <div key={midi} className="flex-1 relative">
               <div
-                className={`absolute top-0 h-full w-[60%] rounded-b z-10 transition-colors ${
+                className={`absolute top-0 h-full w-[60%] -right-[30%] rounded-b z-10 transition-colors ${
                   isActive ? 'bg-emerald-700' : 'bg-slate-900'
                 }`}
-                style={{ right: '-30%' }}
               />
             </div>
           );
