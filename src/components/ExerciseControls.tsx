@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { PATTERNS } from '../domain/patterns';
 import { useExercise } from '../hooks/useExercise';
 import { useCustomPatterns } from '../hooks/useCustomPatterns';
+import { useNotation } from '../hooks/useNotation';
 import type { CustomPattern } from '../domain/customPatterns';
 import PatternSelect from './PatternSelect';
 import RangeSelect from './RangeSelect';
 import TempoSlider from './TempoSlider';
+import NotationSelect from './NotationSelect';
 import PlayButton from './PlayButton';
 import StopButton from './StopButton';
 import PauseResumeButton from './PauseResumeButton';
@@ -42,6 +44,7 @@ export default function ExerciseControls() {
   } = useExercise();
 
   const { patterns: customPatterns, add, update, remove } = useCustomPatterns();
+  const { notation, setNotation } = useNotation();
 
   const allPatterns = [...PATTERNS, ...customPatterns];
   const pattern = allPatterns.find((p) => p.id === patternId) ?? PATTERNS[0];
@@ -107,13 +110,17 @@ export default function ExerciseControls() {
         )}
       </div>
 
-      <RangeSelect
-        min={minMidi}
-        max={maxMidi}
-        onMinChange={setMinMidi}
-        onMaxChange={setMaxMidi}
-        disabled={isActive}
-      />
+      <div className="space-y-3">
+        <NotationSelect value={notation} onChange={setNotation} disabled={isActive} />
+        <RangeSelect
+          min={minMidi}
+          max={maxMidi}
+          notation={notation}
+          onMinChange={setMinMidi}
+          onMaxChange={setMaxMidi}
+          disabled={isActive}
+        />
+      </div>
       <TempoSlider
         value={bpm}
         onChange={(next) => {
