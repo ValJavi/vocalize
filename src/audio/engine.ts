@@ -26,6 +26,9 @@ const SAMPLE_URLS: Record<string, string> = {
 const NEXO_NOTE_BEATS = 1;
 const LEAD_IN_NOTE_BEATS = 1;
 const TRANSITION_SILENCE_BEATS = 1;
+// Breathing room between the end of a rep and the start of the nexo's
+// first reference tone. Lead-in does not get one (it is the very start).
+const NEXO_LEADING_SILENCE_BEATS = 1;
 
 // If the user leaves the exercise paused this long without resuming, the
 // engine releases its resources and ends the run.
@@ -223,7 +226,14 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
   const playReferenceTones = async (
     tones: Midi[],
     beatsPerTone: number,
+    leadingSilenceBeats: number = 0,
   ): Promise<void> => {
+    if (leadingSilenceBeats > 0) {
+      const leadingMs = leadingSilenceBeats * beatSec() * 1000;
+      await sleepUntilStopOrPause(leadingMs);
+      if (stopped || paused) return;
+    }
+
     let nextStart = Tone.now() + 0.05;
 
     for (const tone of tones) {
@@ -248,7 +258,11 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
     playReferenceTones([tonic], LEAD_IN_NOTE_BEATS);
 
   const playNexo = (fromTonic: Midi, toTonic: Midi) =>
-    playReferenceTones([fromTonic, toTonic], NEXO_NOTE_BEATS);
+    playReferenceTones(
+      [fromTonic, toTonic],
+      NEXO_NOTE_BEATS,
+      NEXO_LEADING_SILENCE_BEATS,
+    );
 
   const playRepetition = async (tonic: Midi): Promise<void> => {
     let nextStart = Tone.now() + 0.05;
