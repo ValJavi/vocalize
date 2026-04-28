@@ -166,7 +166,32 @@ export async function previewPattern(
   return handle;
 }
 
-export async function playExercise(config: ExerciseConfig): Promise<ExerciseHandle> {
+export type PlayOptions = {
+  // Fired whenever the modulation direction changes, both when the user
+  // triggers reverseDirection and when advanceTonic auto-flips at the
+  // top of the range. Lets the UI display an up/down indicator that
+  // tracks the engine's internal state.
+  onDirectionChange?: (direction: Direction) => void;
+  // Fired when a tone (lead-in, nexo or pattern step) starts playing,
+  // and with null between tones (silences, gaps, after stop). Lets the
+  // UI light up the corresponding key on a piano visualization.
+  onActiveNoteChange?: (midi: Midi | null) => void;
+  // Fired when the tonic of the next pattern repetition changes. Used
+  // by the UI to render the sequence of notes for the upcoming rep at
+  // the right pitch. Fires once on play with config.range.min and again
+  // on every advanceTonic that produces a new value.
+  onTonicChange?: (tonic: Midi) => void;
+  // Fired before each pattern step plays (with the step index), and
+  // with null when no step is currently sounding (silences, lead-in,
+  // nexo, after pause/stop). Lets the UI highlight which step in the
+  // current rep is being sung.
+  onStepChange?: (stepIndex: number | null) => void;
+};
+
+export async function playExercise(
+  config: ExerciseConfig,
+  options: PlayOptions = {},
+): Promise<ExerciseHandle> {
   await Tone.start();
   const s = await getSampler();
   stopActiveExercise();
@@ -183,6 +208,28 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
   let currentTonic = config.range.min;
   let direction: Direction = 'up';
   let abortController = new AbortController();
+
+  // Helpers gate notifications by equality with the previous value so a
+  // no-op assignment (e.g. advanceTonic returning the same direction)
+  // does not spam the consumer. The optional force flag is for the
+  // initial seed below: the consumer hasn't seen the value yet, so it
+  // needs the first notification even though no change has happened.
+  const setDirection = (next: Direction, force = false) => {
+    if (!force && next === direction) return;
+    direction = next;
+    options.onDirectionChange?.(next);
+  };
+
+  const setTonic = (next: Midi, force = false) => {
+    if (!force && next === currentTonic) return;
+    currentTonic = next;
+    options.onTonicChange?.(next);
+  };
+
+  // Initial state notification so the UI can render the first rep's
+  // sequence and direction indicator before any audio starts.
+  setTonic(currentTonic, true);
+  setDirection(direction, true);
 
   let finishResolve: () => void = () => {};
   const onFinish = new Promise<void>((r) => {
@@ -237,8 +284,12 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
     let nextStart = Tone.now() + 0.05;
 
     for (const tone of tones) {
-      if (stopped || paused) return;
+      if (stopped || paused) {
+        options.onActiveNoteChange?.(null);
+        return;
+      }
       const noteDur = beatsPerTone * beatSec();
+      options.onActiveNoteChange?.(tone);
       s.triggerAttackRelease(
         Tone.Frequency(tone, 'midi').toNote(),
         noteDur,
@@ -247,6 +298,8 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
       nextStart += noteDur;
       await sleepUntilStopOrPause(noteDur * 1000);
     }
+
+    options.onActiveNoteChange?.(null);
 
     if (!stopped && !paused) {
       const silenceMs = transitionSilenceMs();
@@ -267,25 +320,36 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
   const playRepetition = async (tonic: Midi): Promise<void> => {
     let nextStart = Tone.now() + 0.05;
 
-    for (const step of config.pattern.steps) {
-      if (stopped || paused) return;
+    for (let i = 0; i < config.pattern.steps.length; i++) {
+      const step = config.pattern.steps[i];
+      if (stopped || paused) {
+        options.onActiveNoteChange?.(null);
+        options.onStepChange?.(null);
+        return;
+      }
 
       const dur = step.durationBeats * beatSec();
+      const midi = tonic + step.semitoneOffset;
+      options.onStepChange?.(i);
+      options.onActiveNoteChange?.(midi);
       s.triggerAttackRelease(
-        Tone.Frequency(tonic + step.semitoneOffset, 'midi').toNote(),
+        Tone.Frequency(midi, 'midi').toNote(),
         dur,
         nextStart,
       );
       nextStart += dur;
       await sleepUntilStopOrPause(dur * 1000);
     }
+
+    options.onActiveNoteChange?.(null);
+    options.onStepChange?.(null);
   };
 
   const advanceTonic = (): boolean => {
     const next = computeNextTonic({ tonic: currentTonic, direction }, config.range);
     if (!next) return false;
-    currentTonic = next.tonic;
-    direction = next.direction;
+    setTonic(next.tonic);
+    setDirection(next.direction);
     return true;
   };
 
@@ -362,7 +426,7 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
     },
     reverseDirection: () => {
       if (stopped) return;
-      direction = direction === 'up' ? 'down' : 'up';
+      setDirection(direction === 'up' ? 'down' : 'up');
     },
     setBpm: (bpm: number) => {
       if (stopped) return;

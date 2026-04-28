@@ -14,6 +14,8 @@ import PauseResumeButton from './PauseResumeButton';
 import RepeatButton from './RepeatButton';
 import DirectionButton from './DirectionButton';
 import PatternBuilder from './PatternBuilder';
+import PianoKeyboard from './PianoKeyboard';
+import NotesSequence from './NotesSequence';
 
 type BuilderState =
   | { mode: 'closed' }
@@ -29,6 +31,10 @@ export default function ExerciseControls() {
 
   const {
     status,
+    direction,
+    activeMidi,
+    currentTonic,
+    currentStepIndex,
     isLoading,
     samplerReady,
     play,
@@ -81,44 +87,60 @@ export default function ExerciseControls() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <PatternSelect
-          value={patternId}
-          onChange={setPatternId}
-          customPatterns={customPatterns}
-          disabled={isActive}
-        />
-        {!isActive && (
-          <div className="mt-3 space-y-2">
-            <button
-              onClick={() => setBuilder({ mode: 'create' })}
-              className="w-full bg-sky-700 hover:bg-sky-600 active:bg-sky-600 rounded py-2.5 font-medium transition"
-            >
-              + Crear patrón personalizado
-            </button>
-            {selectedCustom && (
+      {isActive ? (
+        <div className="space-y-3">
+          <NotesSequence
+            steps={pattern.steps}
+            tonic={currentTonic}
+            activeStepIndex={currentStepIndex}
+            notation={notation}
+          />
+          <PianoKeyboard
+            minMidi={minMidi - 4}
+            maxMidi={maxMidi + 4}
+            activeMidi={activeMidi}
+            notation={notation}
+          />
+        </div>
+      ) : (
+        <>
+          <div>
+            <PatternSelect
+              value={patternId}
+              onChange={setPatternId}
+              customPatterns={customPatterns}
+            />
+            <div className="mt-3 space-y-2">
               <button
-                onClick={() => setBuilder({ mode: 'edit', pattern: selectedCustom })}
-                className="text-sm text-slate-400 hover:text-slate-200 transition"
+                onClick={() => setBuilder({ mode: 'create' })}
+                className="w-full bg-sky-700 hover:bg-sky-600 active:bg-sky-600 rounded py-2.5 font-medium transition"
               >
-                ✎ Editar &quot;{selectedCustom.name}&quot;
+                + Crear patrón personalizado
               </button>
-            )}
+              {selectedCustom && (
+                <button
+                  onClick={() => setBuilder({ mode: 'edit', pattern: selectedCustom })}
+                  className="text-sm text-slate-400 hover:text-slate-200 transition"
+                >
+                  ✎ Editar &quot;{selectedCustom.name}&quot;
+                </button>
+              )}
+            </div>
           </div>
-        )}
-      </div>
 
-      <div className="space-y-3">
-        <NotationSelect value={notation} onChange={setNotation} disabled={isActive} />
-        <RangeSelect
-          min={minMidi}
-          max={maxMidi}
-          notation={notation}
-          onMinChange={setMinMidi}
-          onMaxChange={setMaxMidi}
-          disabled={isActive}
-        />
-      </div>
+          <div className="space-y-3">
+            <NotationSelect value={notation} onChange={setNotation} />
+            <RangeSelect
+              min={minMidi}
+              max={maxMidi}
+              notation={notation}
+              onMinChange={setMinMidi}
+              onMaxChange={setMaxMidi}
+            />
+          </div>
+        </>
+      )}
+
       <TempoSlider
         value={bpm}
         onChange={(next) => {
@@ -140,7 +162,7 @@ export default function ExerciseControls() {
             </div>
             <div className="flex gap-3">
               <RepeatButton onRepeat={repeat} />
-              <DirectionButton onReverse={reverseDirection} />
+              <DirectionButton direction={direction} onReverse={reverseDirection} />
             </div>
           </>
         )}
