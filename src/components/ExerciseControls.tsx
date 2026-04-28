@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { track } from '@vercel/analytics';
 import { PATTERNS } from '../domain/patterns';
 import { useExercise } from '../hooks/useExercise';
 import { useCustomPatterns } from '../hooks/useCustomPatterns';
@@ -60,6 +61,15 @@ export default function ExerciseControls() {
 
   const handlePlay = () => {
     if (rangeInvalid) return;
+    // Pattern id stays in analytics for presets (stable identifiers); for
+    // user-built ones we only send 'custom' so user-chosen names never
+    // leave the device.
+    track('play', {
+      pattern: pattern.isCustom ? 'custom' : pattern.id,
+      bpm,
+      range_semitones: maxMidi - minMidi,
+      notation,
+    });
     play({
       pattern,
       range: { min: minMidi, max: maxMidi },
