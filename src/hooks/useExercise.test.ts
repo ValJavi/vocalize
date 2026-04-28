@@ -80,6 +80,60 @@ describe('useExercise', () => {
     expect(result.current.direction).toBe('up');
   });
 
+  test('activeMidi updates when the engine reports a note', async () => {
+    let captured: ((midi: number | null) => void) | undefined;
+    vi.mocked(engine.playExercise).mockImplementation(
+      async (_config: ExerciseConfig, options: PlayOptions = {}) => {
+        captured = options.onActiveNoteChange;
+        return fakeHandle();
+      },
+    );
+
+    const { result } = renderHook(() => useExercise());
+
+    await act(async () => {
+      await result.current.play(CONFIG);
+    });
+
+    expect(result.current.activeMidi).toBeNull();
+
+    act(() => {
+      captured?.(60);
+    });
+    expect(result.current.activeMidi).toBe(60);
+
+    act(() => {
+      captured?.(null);
+    });
+    expect(result.current.activeMidi).toBeNull();
+  });
+
+  test('pause clears the active note', async () => {
+    let captured: ((midi: number | null) => void) | undefined;
+    vi.mocked(engine.playExercise).mockImplementation(
+      async (_config: ExerciseConfig, options: PlayOptions = {}) => {
+        captured = options.onActiveNoteChange;
+        return fakeHandle();
+      },
+    );
+
+    const { result } = renderHook(() => useExercise());
+
+    await act(async () => {
+      await result.current.play(CONFIG);
+    });
+
+    act(() => {
+      captured?.(60);
+    });
+    expect(result.current.activeMidi).toBe(60);
+
+    act(() => {
+      result.current.pause();
+    });
+    expect(result.current.activeMidi).toBeNull();
+  });
+
   test('stop resets direction to up', async () => {
     let capturedOnDirectionChange: ((d: Direction) => void) | undefined;
     vi.mocked(engine.playExercise).mockImplementation(

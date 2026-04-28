@@ -14,6 +14,7 @@ import PauseResumeButton from './PauseResumeButton';
 import RepeatButton from './RepeatButton';
 import DirectionButton from './DirectionButton';
 import PatternBuilder from './PatternBuilder';
+import PianoKeyboard from './PianoKeyboard';
 
 type BuilderState =
   | { mode: 'closed' }
@@ -30,6 +31,7 @@ export default function ExerciseControls() {
   const {
     status,
     direction,
+    activeMidi,
     isLoading,
     samplerReady,
     play,
@@ -127,6 +129,15 @@ export default function ExerciseControls() {
           setEngineBpm(next);
         }}
       />
+
+      {isActive && (
+        <PianoKeyboard
+          minMidi={minMidi - 4}
+          maxMidi={maxMidi + 4}
+          activeMidi={activeMidi}
+          notation={notation}
+        />
+      )}
 
       <div className="pt-2 space-y-3">
         {!isActive ? (

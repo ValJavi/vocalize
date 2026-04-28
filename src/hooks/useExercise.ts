@@ -7,13 +7,14 @@ import {
   type ExerciseHandle,
 } from '../audio/engine';
 import type { Direction } from '../domain/modulation';
-import type { ExerciseConfig } from '../domain/types';
+import type { ExerciseConfig, Midi } from '../domain/types';
 
 export type ExerciseStatus = 'idle' | 'playing' | 'paused';
 
 export function useExercise() {
   const [status, setStatus] = useState<ExerciseStatus>('idle');
   const [direction, setDirection] = useState<Direction>('up');
+  const [activeMidi, setActiveMidi] = useState<Midi | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [samplerReady, setSamplerReady] = useState(isSamplerReady());
   const handleRef = useRef<ExerciseHandle | null>(null);
@@ -28,8 +29,10 @@ export function useExercise() {
     setIsLoading(true);
     try {
       setDirection('up');
+      setActiveMidi(null);
       const handle = await playExercise(config, {
         onDirectionChange: setDirection,
+        onActiveNoteChange: setActiveMidi,
       });
       handleRef.current = handle;
       setSamplerReady(true);
@@ -39,6 +42,7 @@ export function useExercise() {
           handleRef.current = null;
           setStatus('idle');
           setDirection('up');
+          setActiveMidi(null);
         }
       });
     } finally {
@@ -51,12 +55,14 @@ export function useExercise() {
     handleRef.current = null;
     setStatus('idle');
     setDirection('up');
+    setActiveMidi(null);
   };
 
   const pause = () => {
     if (!handleRef.current) return;
     handleRef.current.pause();
     setStatus('paused');
+    setActiveMidi(null);
   };
 
   const resume = () => {
@@ -90,6 +96,7 @@ export function useExercise() {
   return {
     status,
     direction,
+    activeMidi,
     isLoading,
     samplerReady,
     play,

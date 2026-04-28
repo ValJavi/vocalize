@@ -172,6 +172,10 @@ export type PlayOptions = {
   // top of the range. Lets the UI display an up/down indicator that
   // tracks the engine's internal state.
   onDirectionChange?: (direction: Direction) => void;
+  // Fired when a tone (lead-in, nexo or pattern step) starts playing,
+  // and with null between tones (silences, gaps, after stop). Lets the
+  // UI light up the corresponding key on a piano visualization.
+  onActiveNoteChange?: (midi: Midi | null) => void;
 };
 
 export async function playExercise(
@@ -254,8 +258,12 @@ export async function playExercise(
     let nextStart = Tone.now() + 0.05;
 
     for (const tone of tones) {
-      if (stopped || paused) return;
+      if (stopped || paused) {
+        options.onActiveNoteChange?.(null);
+        return;
+      }
       const noteDur = beatsPerTone * beatSec();
+      options.onActiveNoteChange?.(tone);
       s.triggerAttackRelease(
         Tone.Frequency(tone, 'midi').toNote(),
         noteDur,
@@ -264,6 +272,8 @@ export async function playExercise(
       nextStart += noteDur;
       await sleepUntilStopOrPause(noteDur * 1000);
     }
+
+    options.onActiveNoteChange?.(null);
 
     if (!stopped && !paused) {
       const silenceMs = transitionSilenceMs();
@@ -285,17 +295,24 @@ export async function playExercise(
     let nextStart = Tone.now() + 0.05;
 
     for (const step of config.pattern.steps) {
-      if (stopped || paused) return;
+      if (stopped || paused) {
+        options.onActiveNoteChange?.(null);
+        return;
+      }
 
       const dur = step.durationBeats * beatSec();
+      const midi = tonic + step.semitoneOffset;
+      options.onActiveNoteChange?.(midi);
       s.triggerAttackRelease(
-        Tone.Frequency(tonic + step.semitoneOffset, 'midi').toNote(),
+        Tone.Frequency(midi, 'midi').toNote(),
         dur,
         nextStart,
       );
       nextStart += dur;
       await sleepUntilStopOrPause(dur * 1000);
     }
+
+    options.onActiveNoteChange?.(null);
   };
 
   const advanceTonic = (): boolean => {
