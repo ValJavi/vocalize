@@ -5,13 +5,6 @@ import ExerciseControls from './components/ExerciseControls';
 
 export default function App() {
   useEffect(() => {
-    // iOS Safari exposes navigator.standalone instead of the standard
-    // display-mode media query, so we check both to cover every platform.
-    const isStandalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as { standalone?: boolean }).standalone === true;
-    if (isStandalone) track('pwa_launch');
-
     const onInstalled = () => track('pwa_installed');
     window.addEventListener('appinstalled', onInstalled);
     return () => window.removeEventListener('appinstalled', onInstalled);
