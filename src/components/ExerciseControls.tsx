@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { track } from '@vercel/analytics';
 import { PATTERNS } from '../domain/patterns';
+import { patternOffsetSpan, vocalToTonicRange } from '../domain/range';
 import { useExercise } from '../hooks/useExercise';
 import { useCustomPatterns } from '../hooks/useCustomPatterns';
 import { useNotation } from '../hooks/useNotation';
@@ -56,11 +57,17 @@ export default function ExerciseControls() {
   const selectedCustom = customPatterns.find((p) => p.id === patternId);
 
   const rangeInvalid = minMidi >= maxMidi;
+  const patternSpan = patternOffsetSpan(pattern);
+  const tonicRange = rangeInvalid
+    ? null
+    : vocalToTonicRange({ min: minMidi, max: maxMidi }, pattern);
+  const patternTooWide = !rangeInvalid && tonicRange === null;
+  const cantPlay = rangeInvalid || patternTooWide;
   const isActive = status !== 'idle';
   const isPaused = status === 'paused';
 
   const handlePlay = () => {
-    if (rangeInvalid) return;
+    if (cantPlay || !tonicRange) return;
     // Pattern id stays in analytics for presets (stable identifiers); for
     // user-built ones we only send 'custom' so user-chosen names never
     // leave the device.
@@ -72,7 +79,7 @@ export default function ExerciseControls() {
     });
     play({
       pattern,
-      range: { min: minMidi, max: maxMidi },
+      range: tonicRange,
       bpm,
       gapBeats: 1,
     });
@@ -140,13 +147,20 @@ export default function ExerciseControls() {
 
           <div className="space-y-3">
             <NotationSelect value={notation} onChange={setNotation} />
-            <RangeSelect
-              min={minMidi}
-              max={maxMidi}
-              notation={notation}
-              onMinChange={setMinMidi}
-              onMaxChange={setMaxMidi}
-            />
+            <div>
+              <RangeSelect
+                min={minMidi}
+                max={maxMidi}
+                notation={notation}
+                onMinChange={setMinMidi}
+                onMaxChange={setMaxMidi}
+              />
+              {patternTooWide && (
+                <p className="text-amber-400 text-sm mt-2">
+                  Este patrón abarca {patternSpan.max - patternSpan.min} semitonos. Ampliá tu rango vocal.
+                </p>
+              )}
+            </div>
           </div>
         </>
       )}
@@ -162,7 +176,7 @@ export default function ExerciseControls() {
       <div className="pt-2 space-y-3">
         {!isActive ? (
           <div className="flex gap-3">
-            <PlayButton onPlay={handlePlay} disabled={rangeInvalid} isLoading={isLoading} />
+            <PlayButton onPlay={handlePlay} disabled={cantPlay} isLoading={isLoading} />
           </div>
         ) : (
           <>
