@@ -12,7 +12,6 @@ import PlayButton from './PlayButton';
 import StopButton from './StopButton';
 import PauseResumeButton from './PauseResumeButton';
 import RepeatButton from './RepeatButton';
-import SkipButton from './SkipButton';
 import DirectionButton from './DirectionButton';
 import PatternBuilder from './PatternBuilder';
 
@@ -37,7 +36,6 @@ export default function ExerciseControls() {
     pause,
     resume,
     repeat,
-    skip,
     reverseDirection,
     setBpm: setEngineBpm,
     preload,
@@ -142,9 +140,6 @@ export default function ExerciseControls() {
             </div>
             <div className="flex gap-3">
               <RepeatButton onRepeat={repeat} />
-              {!isPaused && <SkipButton onSkip={skip} />}
-            </div>
-            <div className="flex gap-3">
               <DirectionButton onReverse={reverseDirection} />
             </div>
           </>

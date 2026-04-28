@@ -62,10 +62,6 @@ export function useExercise() {
     handleRef.current?.repeat();
   };
 
-  const skip = () => {
-    handleRef.current?.skip();
-  };
-
   const reverseDirection = () => {
     handleRef.current?.reverseDirection();
   };
@@ -93,7 +89,6 @@ export function useExercise() {
     pause,
     resume,
     repeat,
-    skip,
     reverseDirection,
     setBpm,
     preload,

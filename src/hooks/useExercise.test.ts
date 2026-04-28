@@ -25,7 +25,6 @@ function fakeHandle(overrides: Partial<ExerciseHandle> = {}): ExerciseHandle {
     pause: vi.fn(),
     resume: vi.fn(),
     repeat: vi.fn(),
-    skip: vi.fn(),
     reverseDirection: vi.fn(),
     setBpm: vi.fn(),
     onFinish: new Promise<void>(() => {}),
@@ -103,7 +102,7 @@ describe('useExercise', () => {
     expect(engine.stopActiveExercise).toHaveBeenCalled();
   });
 
-  test('repeat, skip, reverseDirection, setBpm forward to the handle', async () => {
+  test('repeat, reverseDirection, setBpm forward to the handle', async () => {
     const handle = fakeHandle();
     vi.mocked(engine.playExercise).mockResolvedValue(handle);
 
@@ -115,13 +114,11 @@ describe('useExercise', () => {
 
     act(() => {
       result.current.repeat();
-      result.current.skip();
       result.current.reverseDirection();
       result.current.setBpm(120);
     });
 
     expect(handle.repeat).toHaveBeenCalledTimes(1);
-    expect(handle.skip).toHaveBeenCalledTimes(1);
     expect(handle.reverseDirection).toHaveBeenCalledTimes(1);
     expect(handle.setBpm).toHaveBeenCalledWith(120);
   });
@@ -133,7 +130,6 @@ describe('useExercise', () => {
       result.current.pause();
       result.current.resume();
       result.current.repeat();
-      result.current.skip();
       result.current.reverseDirection();
       result.current.setBpm(120);
     });

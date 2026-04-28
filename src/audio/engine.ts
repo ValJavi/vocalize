@@ -36,7 +36,6 @@ export type ExerciseHandle = {
   pause: () => void;
   resume: () => void;
   repeat: () => void;
-  skip: () => void;
   reverseDirection: () => void;
   setBpm: (bpm: number) => void;
   onFinish: Promise<void>;
@@ -178,7 +177,6 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
   let stopped = false;
   let paused = false;
   let repeatPending = false;
-  let skipRequested = false;
   let currentTonic = config.range.min;
   let direction: Direction = 'up';
   let abortController = new AbortController();
@@ -257,7 +255,6 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
 
     for (const step of config.pattern.steps) {
       if (stopped || paused) return;
-      if (skipRequested) return;
 
       const dur = step.durationBeats * beatSec();
       s.triggerAttackRelease(
@@ -278,16 +275,6 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
     return true;
   };
 
-  const consumeSkip = async (): Promise<'continue' | 'break'> => {
-    const fromTonic = currentTonic;
-    skipRequested = false;
-    repeatPending = false;
-    if (!advanceTonic()) return 'break';
-    await playNexo(fromTonic, currentTonic);
-    if (stopped) return 'break';
-    return 'continue';
-  };
-
   const loop = async () => {
     let leadInDone = false;
 
@@ -302,11 +289,6 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
         break;
       }
 
-      if (skipRequested) {
-        if ((await consumeSkip()) === 'break') break;
-        continue;
-      }
-
       if (!leadInDone) {
         await playLeadIn(currentTonic);
         if (stopped) break;
@@ -318,11 +300,6 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
       if (stopped) break;
       if (paused) continue;
 
-      if (skipRequested) {
-        if ((await consumeSkip()) === 'break') break;
-        continue;
-      }
-
       if (repeatPending) {
         repeatPending = false;
         const gapMs = gapSec() * 1000;
@@ -330,11 +307,6 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
           await sleep(gapMs);
           if (stopped) break;
           if (paused) continue;
-
-          if (skipRequested) {
-            if ((await consumeSkip()) === 'break') break;
-            continue;
-          }
         }
       } else {
         const fromTonic = currentTonic;
@@ -373,11 +345,6 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
     },
     repeat: () => {
       repeatPending = true;
-    },
-    skip: () => {
-      if (stopped || paused) return;
-      skipRequested = true;
-      wakeUp();
     },
     reverseDirection: () => {
       if (stopped) return;
