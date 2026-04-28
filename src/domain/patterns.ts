@@ -4,8 +4,8 @@ const beat = (semitoneOffset: number) => ({ semitoneOffset, durationBeats: 1 });
 
 export const PATTERNS: Pattern[] = [
   {
-    id: 'do-re-mi-re-do',
-    name: 'Do - Re - Mi - Re - Do',
+    id: 'major-scale-3',
+    name: 'Escala mayor 3 notas (1-2-3-2-1)',
     steps: [0, 2, 4, 2, 0].map(beat),
   },
   {
