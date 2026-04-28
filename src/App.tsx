@@ -1,7 +1,22 @@
+import { useEffect } from 'react';
 import { Analytics } from '@vercel/analytics/react';
+import { track } from '@vercel/analytics';
 import ExerciseControls from './components/ExerciseControls';
 
 export default function App() {
+  useEffect(() => {
+    // iOS Safari exposes navigator.standalone instead of the standard
+    // display-mode media query, so we check both to cover every platform.
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as { standalone?: boolean }).standalone === true;
+    if (isStandalone) track('pwa_launch');
+
+    const onInstalled = () => track('pwa_installed');
+    window.addEventListener('appinstalled', onInstalled);
+    return () => window.removeEventListener('appinstalled', onInstalled);
+  }, []);
+
   return (
     <div className="min-h-full bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 text-slate-100">
       <div className="max-w-md mx-auto px-4 py-10 sm:py-14">
