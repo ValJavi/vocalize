@@ -11,6 +11,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
+        id: '/',
         name: 'Vocalize',
         short_name: 'Vocalize',
         description: 'Ejercicios de vocalización para cantantes',
