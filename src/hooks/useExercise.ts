@@ -15,6 +15,8 @@ export function useExercise() {
   const [status, setStatus] = useState<ExerciseStatus>('idle');
   const [direction, setDirection] = useState<Direction>('up');
   const [activeMidi, setActiveMidi] = useState<Midi | null>(null);
+  const [currentTonic, setCurrentTonic] = useState<Midi | null>(null);
+  const [currentStepIndex, setCurrentStepIndex] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [samplerReady, setSamplerReady] = useState(isSamplerReady());
   const handleRef = useRef<ExerciseHandle | null>(null);
@@ -30,9 +32,12 @@ export function useExercise() {
     try {
       setDirection('up');
       setActiveMidi(null);
+      setCurrentStepIndex(null);
       const handle = await playExercise(config, {
         onDirectionChange: setDirection,
         onActiveNoteChange: setActiveMidi,
+        onTonicChange: setCurrentTonic,
+        onStepChange: setCurrentStepIndex,
       });
       handleRef.current = handle;
       setSamplerReady(true);
@@ -43,6 +48,8 @@ export function useExercise() {
           setStatus('idle');
           setDirection('up');
           setActiveMidi(null);
+          setCurrentTonic(null);
+          setCurrentStepIndex(null);
         }
       });
     } finally {
@@ -56,6 +63,8 @@ export function useExercise() {
     setStatus('idle');
     setDirection('up');
     setActiveMidi(null);
+    setCurrentTonic(null);
+    setCurrentStepIndex(null);
   };
 
   const pause = () => {
@@ -63,6 +72,7 @@ export function useExercise() {
     handleRef.current.pause();
     setStatus('paused');
     setActiveMidi(null);
+    setCurrentStepIndex(null);
   };
 
   const resume = () => {
@@ -97,6 +107,8 @@ export function useExercise() {
     status,
     direction,
     activeMidi,
+    currentTonic,
+    currentStepIndex,
     isLoading,
     samplerReady,
     play,

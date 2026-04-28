@@ -176,6 +176,16 @@ export type PlayOptions = {
   // and with null between tones (silences, gaps, after stop). Lets the
   // UI light up the corresponding key on a piano visualization.
   onActiveNoteChange?: (midi: Midi | null) => void;
+  // Fired when the tonic of the next pattern repetition changes. Used
+  // by the UI to render the sequence of notes for the upcoming rep at
+  // the right pitch. Fires once on play with config.range.min and again
+  // on every advanceTonic that produces a new value.
+  onTonicChange?: (tonic: Midi) => void;
+  // Fired before each pattern step plays (with the step index), and
+  // with null when no step is currently sounding (silences, lead-in,
+  // nexo, after pause/stop). Lets the UI highlight which step in the
+  // current rep is being sung.
+  onStepChange?: (stepIndex: number | null) => void;
 };
 
 export async function playExercise(
@@ -204,6 +214,16 @@ export async function playExercise(
     direction = next;
     options.onDirectionChange?.(next);
   };
+
+  const setTonic = (next: Midi) => {
+    if (next === currentTonic) return;
+    currentTonic = next;
+    options.onTonicChange?.(next);
+  };
+
+  // Initial tonic notification so the UI can render the first rep's
+  // sequence before any audio starts.
+  options.onTonicChange?.(currentTonic);
 
   let finishResolve: () => void = () => {};
   const onFinish = new Promise<void>((r) => {
@@ -294,14 +314,17 @@ export async function playExercise(
   const playRepetition = async (tonic: Midi): Promise<void> => {
     let nextStart = Tone.now() + 0.05;
 
-    for (const step of config.pattern.steps) {
+    for (let i = 0; i < config.pattern.steps.length; i++) {
+      const step = config.pattern.steps[i];
       if (stopped || paused) {
         options.onActiveNoteChange?.(null);
+        options.onStepChange?.(null);
         return;
       }
 
       const dur = step.durationBeats * beatSec();
       const midi = tonic + step.semitoneOffset;
+      options.onStepChange?.(i);
       options.onActiveNoteChange?.(midi);
       s.triggerAttackRelease(
         Tone.Frequency(midi, 'midi').toNote(),
@@ -313,12 +336,13 @@ export async function playExercise(
     }
 
     options.onActiveNoteChange?.(null);
+    options.onStepChange?.(null);
   };
 
   const advanceTonic = (): boolean => {
     const next = computeNextTonic({ tonic: currentTonic, direction }, config.range);
     if (!next) return false;
-    currentTonic = next.tonic;
+    setTonic(next.tonic);
     setDirection(next.direction);
     return true;
   };

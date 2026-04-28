@@ -108,6 +108,71 @@ describe('useExercise', () => {
     expect(result.current.activeMidi).toBeNull();
   });
 
+  test('currentTonic and currentStepIndex flow through to React state', async () => {
+    let tonicCb: ((t: number) => void) | undefined;
+    let stepCb: ((i: number | null) => void) | undefined;
+    vi.mocked(engine.playExercise).mockImplementation(
+      async (_config: ExerciseConfig, options: PlayOptions = {}) => {
+        tonicCb = options.onTonicChange;
+        stepCb = options.onStepChange;
+        return fakeHandle();
+      },
+    );
+
+    const { result } = renderHook(() => useExercise());
+
+    await act(async () => {
+      await result.current.play(CONFIG);
+    });
+
+    expect(result.current.currentTonic).toBeNull();
+    expect(result.current.currentStepIndex).toBeNull();
+
+    act(() => {
+      tonicCb?.(48);
+      stepCb?.(2);
+    });
+    expect(result.current.currentTonic).toBe(48);
+    expect(result.current.currentStepIndex).toBe(2);
+
+    act(() => {
+      stepCb?.(null);
+    });
+    expect(result.current.currentStepIndex).toBeNull();
+    expect(result.current.currentTonic).toBe(48);
+  });
+
+  test('stop clears tonic and step index', async () => {
+    let tonicCb: ((t: number) => void) | undefined;
+    let stepCb: ((i: number | null) => void) | undefined;
+    vi.mocked(engine.playExercise).mockImplementation(
+      async (_config: ExerciseConfig, options: PlayOptions = {}) => {
+        tonicCb = options.onTonicChange;
+        stepCb = options.onStepChange;
+        return fakeHandle();
+      },
+    );
+
+    const { result } = renderHook(() => useExercise());
+
+    await act(async () => {
+      await result.current.play(CONFIG);
+    });
+
+    act(() => {
+      tonicCb?.(48);
+      stepCb?.(0);
+    });
+    expect(result.current.currentTonic).toBe(48);
+    expect(result.current.currentStepIndex).toBe(0);
+
+    act(() => {
+      result.current.stop();
+    });
+    expect(result.current.currentTonic).toBeNull();
+    expect(result.current.currentStepIndex).toBeNull();
+  });
+
   test('pause clears the active note', async () => {
     let captured: ((midi: number | null) => void) | undefined;
     vi.mocked(engine.playExercise).mockImplementation(
