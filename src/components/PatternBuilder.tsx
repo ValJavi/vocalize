@@ -152,24 +152,25 @@ export default function PatternBuilder({
           />
         </label>
 
-        <div className="mb-4">
+        <div className="mb-2">
           <span className="block text-sm text-slate-300 mb-2">Notas</span>
           <div
             className="grid items-center gap-2"
             // Inline style instead of grid-cols-[...] arbitrary class so the
             // header and every step row share one source of truth for column
-            // widths; the Tailwind arbitrary form rendered the Duración header
-            // misaligned in Chrome.
-            style={{ gridTemplateColumns: '1.25rem 1fr 1fr 2rem' }}
+            // widths. Grado has short labels (1, ♭3, ♭10) so it gets a fixed
+            // narrow column; Duración takes the rest with minmax(0, 1fr) so
+            // it can shrink without overflowing the grid when its longer
+            // labels (e.g. "Negra con punto (1½)") would otherwise expand
+            // the column past its share.
+            style={{ gridTemplateColumns: '4.5rem minmax(0, 1fr) 2rem' }}
           >
-            <span aria-hidden="true" />
             <span className="px-2 text-xs text-slate-500">Grado</span>
             <span className="px-2 text-xs text-slate-500">Duración</span>
             <span aria-hidden="true" />
 
             {steps.map((step, i) => (
               <Fragment key={i}>
-                <span className="text-slate-500 text-xs text-right">{i + 1}.</span>
                 <select
                   value={step.degreeId}
                   onChange={(e) =>
@@ -201,7 +202,7 @@ export default function PatternBuilder({
                 <button
                   onClick={() => removeStep(i)}
                   disabled={steps.length === 1}
-                  className="bg-slate-700 hover:bg-rose-700 disabled:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed rounded w-8 h-8 flex items-center justify-center transition"
+                  className="bg-slate-700 hover:bg-rose-700 active:bg-rose-700 disabled:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed rounded w-8 h-8 flex items-center justify-center transition"
                   aria-label={`Eliminar nota ${i + 1}`}
                   title={steps.length === 1 ? 'Debe haber al menos una nota' : 'Eliminar'}
                 >
@@ -212,7 +213,7 @@ export default function PatternBuilder({
           </div>
           <button
             onClick={addStep}
-            className="mt-3 w-full bg-slate-700 hover:bg-slate-600 rounded py-2 text-sm transition"
+            className="mt-3 w-full bg-slate-700 hover:bg-slate-600 active:bg-slate-600 rounded py-2 text-sm font-medium transition"
           >
             + Agregar nota
           </button>
@@ -221,35 +222,43 @@ export default function PatternBuilder({
         <button
           onClick={handlePreview}
           disabled={steps.length === 0}
-          className={`w-full rounded py-2 mb-4 text-sm font-medium transition ${
+          className={`w-full rounded py-2 mb-6 text-sm font-medium transition ${
             isPreviewing
-              ? 'bg-amber-600 hover:bg-amber-500'
-              : 'bg-sky-600 hover:bg-sky-500 disabled:bg-slate-700 disabled:text-slate-400'
+              ? 'bg-amber-700 hover:bg-amber-600 active:bg-amber-600'
+              : 'bg-sky-700 hover:bg-sky-600 active:bg-sky-600 disabled:bg-slate-700 disabled:text-slate-400'
           }`}
         >
           {isPreviewing ? '■ Detener preview' : '▶ Reproducir patrón'}
         </button>
 
-        <div className="flex gap-2">
-          {isEdit && onDelete && (
+        <div className="space-y-2">
+          {isEdit && onDelete ? (
+            <div className="flex gap-2">
+              <button
+                onClick={handleDelete}
+                className="flex-1 bg-rose-700 hover:bg-rose-600 active:bg-rose-600 rounded py-2 text-sm font-medium transition"
+              >
+                Eliminar
+              </button>
+              <button
+                onClick={onClose}
+                className="flex-1 bg-slate-700 hover:bg-slate-600 active:bg-slate-600 rounded py-2 text-sm font-medium transition"
+              >
+                Cancelar
+              </button>
+            </div>
+          ) : (
             <button
-              onClick={handleDelete}
-              className="bg-rose-700 hover:bg-rose-600 rounded px-3 py-2 text-sm transition"
+              onClick={onClose}
+              className="w-full bg-slate-700 hover:bg-slate-600 active:bg-slate-600 rounded py-2 text-sm font-medium transition"
             >
-              Eliminar
+              Cancelar
             </button>
           )}
-          <div className="flex-1" />
-          <button
-            onClick={onClose}
-            className="bg-slate-700 hover:bg-slate-600 rounded px-4 py-2 text-sm transition"
-          >
-            Cancelar
-          </button>
           <button
             onClick={handleSave}
             disabled={!canSave}
-            className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-400 rounded px-4 py-2 text-sm font-medium transition"
+            className="w-full bg-emerald-700 hover:bg-emerald-600 active:bg-emerald-600 disabled:bg-slate-700 disabled:text-slate-400 rounded py-2 text-sm font-medium transition"
           >
             Guardar
           </button>
