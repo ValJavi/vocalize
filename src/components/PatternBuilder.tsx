@@ -1,15 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { DEGREES, type DegreeId, semitonesFromDegreeId, degreeFromSemitones } from '../domain/degrees';
 import { buildCustomPattern, type CustomPattern } from '../domain/customPatterns';
 import type { PatternStep } from '../domain/types';
 import { previewPattern, stopActivePreview, type PreviewHandle } from '../audio/engine';
 
 const DURATIONS: { label: string; beats: number }[] = [
-  { label: 'Corchea ♪', beats: 0.5 },
-  { label: 'Negra ♩', beats: 1 },
-  { label: 'Negra con punto', beats: 1.5 },
-  { label: 'Blanca 𝅗𝅥', beats: 2 },
-  { label: 'Redonda 𝅝', beats: 4 },
+  { label: 'Corchea ♪ (½)', beats: 0.5 },
+  { label: 'Negra ♩ (1)', beats: 1 },
+  { label: 'Negra con punto (1½)', beats: 1.5 },
+  { label: 'Blanca (2)', beats: 2 },
+  { label: 'Redonda (4)', beats: 4 },
 ];
 
 const PREVIEW_TONIC = 60; // C4
@@ -154,16 +154,24 @@ export default function PatternBuilder({
 
         <div className="mb-4">
           <span className="block text-sm text-slate-300 mb-2">Notas</span>
-          <div className="space-y-2">
+          <div
+            className="grid items-center gap-x-2 gap-y-2"
+            style={{ gridTemplateColumns: '1.25rem 1fr 1fr 2rem' }}
+          >
+            <span aria-hidden="true" />
+            <span className="px-2 text-xs text-slate-500">Grado</span>
+            <span className="px-2 text-xs text-slate-500">Duración</span>
+            <span aria-hidden="true" />
+
             {steps.map((step, i) => (
-              <div key={i} className="flex gap-2 items-center">
-                <span className="text-slate-500 text-xs w-5 text-right">{i + 1}.</span>
+              <Fragment key={i}>
+                <span className="text-slate-500 text-xs text-right">{i + 1}.</span>
                 <select
                   value={step.degreeId}
                   onChange={(e) =>
                     updateStep(i, { degreeId: e.target.value as DegreeId })
                   }
-                  className="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 focus:outline-none focus:border-slate-500"
+                  className="bg-slate-900 border border-slate-700 rounded px-2 py-1 focus:outline-none focus:border-slate-500"
                   aria-label={`Grado de la nota ${i + 1}`}
                 >
                   {DEGREES.map((d) => (
@@ -177,7 +185,7 @@ export default function PatternBuilder({
                   onChange={(e) =>
                     updateStep(i, { durationBeats: Number(e.target.value) })
                   }
-                  className="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 focus:outline-none focus:border-slate-500"
+                  className="bg-slate-900 border border-slate-700 rounded px-2 py-1 focus:outline-none focus:border-slate-500"
                   aria-label={`Duración de la nota ${i + 1}`}
                 >
                   {DURATIONS.map((d) => (
@@ -195,7 +203,7 @@ export default function PatternBuilder({
                 >
                   ×
                 </button>
-              </div>
+              </Fragment>
             ))}
           </div>
           <button
