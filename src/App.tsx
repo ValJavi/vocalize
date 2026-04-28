@@ -1,3 +1,4 @@
+import { Analytics } from '@vercel/analytics/react';
 import ExerciseControls from './components/ExerciseControls';
 
 export default function App() {
@@ -17,6 +18,7 @@ export default function App() {
           <ExerciseControls />
         </div>
       </div>
+      <Analytics />
     </div>
   );
 }
