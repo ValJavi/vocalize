@@ -166,7 +166,18 @@ export async function previewPattern(
   return handle;
 }
 
-export async function playExercise(config: ExerciseConfig): Promise<ExerciseHandle> {
+export type PlayOptions = {
+  // Fired whenever the modulation direction changes, both when the user
+  // triggers reverseDirection and when advanceTonic auto-flips at the
+  // top of the range. Lets the UI display an up/down indicator that
+  // tracks the engine's internal state.
+  onDirectionChange?: (direction: Direction) => void;
+};
+
+export async function playExercise(
+  config: ExerciseConfig,
+  options: PlayOptions = {},
+): Promise<ExerciseHandle> {
   await Tone.start();
   const s = await getSampler();
   stopActiveExercise();
@@ -183,6 +194,12 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
   let currentTonic = config.range.min;
   let direction: Direction = 'up';
   let abortController = new AbortController();
+
+  const setDirection = (next: Direction) => {
+    if (next === direction) return;
+    direction = next;
+    options.onDirectionChange?.(next);
+  };
 
   let finishResolve: () => void = () => {};
   const onFinish = new Promise<void>((r) => {
@@ -285,7 +302,7 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
     const next = computeNextTonic({ tonic: currentTonic, direction }, config.range);
     if (!next) return false;
     currentTonic = next.tonic;
-    direction = next.direction;
+    setDirection(next.direction);
     return true;
   };
 
@@ -362,7 +379,7 @@ export async function playExercise(config: ExerciseConfig): Promise<ExerciseHand
     },
     reverseDirection: () => {
       if (stopped) return;
-      direction = direction === 'up' ? 'down' : 'up';
+      setDirection(direction === 'up' ? 'down' : 'up');
     },
     setBpm: (bpm: number) => {
       if (stopped) return;

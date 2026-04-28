@@ -29,6 +29,7 @@ export default function ExerciseControls() {
 
   const {
     status,
+    direction,
     isLoading,
     samplerReady,
     play,
@@ -140,7 +141,7 @@ export default function ExerciseControls() {
             </div>
             <div className="flex gap-3">
               <RepeatButton onRepeat={repeat} />
-              <DirectionButton onReverse={reverseDirection} />
+              <DirectionButton direction={direction} onReverse={reverseDirection} />
             </div>
           </>
         )}

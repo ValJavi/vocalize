@@ -6,12 +6,14 @@ import {
   isSamplerReady,
   type ExerciseHandle,
 } from '../audio/engine';
+import type { Direction } from '../domain/modulation';
 import type { ExerciseConfig } from '../domain/types';
 
 export type ExerciseStatus = 'idle' | 'playing' | 'paused';
 
 export function useExercise() {
   const [status, setStatus] = useState<ExerciseStatus>('idle');
+  const [direction, setDirection] = useState<Direction>('up');
   const [isLoading, setIsLoading] = useState(false);
   const [samplerReady, setSamplerReady] = useState(isSamplerReady());
   const handleRef = useRef<ExerciseHandle | null>(null);
@@ -25,7 +27,10 @@ export function useExercise() {
   const play = async (config: ExerciseConfig) => {
     setIsLoading(true);
     try {
-      const handle = await playExercise(config);
+      setDirection('up');
+      const handle = await playExercise(config, {
+        onDirectionChange: setDirection,
+      });
       handleRef.current = handle;
       setSamplerReady(true);
       setStatus('playing');
@@ -33,6 +38,7 @@ export function useExercise() {
         if (handleRef.current === handle) {
           handleRef.current = null;
           setStatus('idle');
+          setDirection('up');
         }
       });
     } finally {
@@ -44,6 +50,7 @@ export function useExercise() {
     stopActiveExercise();
     handleRef.current = null;
     setStatus('idle');
+    setDirection('up');
   };
 
   const pause = () => {
@@ -82,6 +89,7 @@ export function useExercise() {
 
   return {
     status,
+    direction,
     isLoading,
     samplerReady,
     play,

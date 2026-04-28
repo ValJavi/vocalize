@@ -2,7 +2,8 @@ import { vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useExercise } from './useExercise';
 import * as engine from '../audio/engine';
-import type { ExerciseHandle } from '../audio/engine';
+import type { ExerciseHandle, PlayOptions } from '../audio/engine';
+import type { Direction } from '../domain/modulation';
 import type { ExerciseConfig } from '../domain/types';
 
 vi.mock('../audio/engine', () => ({
@@ -46,6 +47,65 @@ describe('useExercise', () => {
     expect(result.current.isLoading).toBe(false);
   });
 
+  test('initial direction defaults to up', () => {
+    const { result } = renderHook(() => useExercise());
+    expect(result.current.direction).toBe('up');
+  });
+
+  test('direction updates when the engine reports a change', async () => {
+    let capturedOnDirectionChange: ((d: Direction) => void) | undefined;
+    vi.mocked(engine.playExercise).mockImplementation(
+      async (_config: ExerciseConfig, options: PlayOptions = {}) => {
+        capturedOnDirectionChange = options.onDirectionChange;
+        return fakeHandle();
+      },
+    );
+
+    const { result } = renderHook(() => useExercise());
+
+    await act(async () => {
+      await result.current.play(CONFIG);
+    });
+
+    expect(result.current.direction).toBe('up');
+
+    act(() => {
+      capturedOnDirectionChange?.('down');
+    });
+    expect(result.current.direction).toBe('down');
+
+    act(() => {
+      capturedOnDirectionChange?.('up');
+    });
+    expect(result.current.direction).toBe('up');
+  });
+
+  test('stop resets direction to up', async () => {
+    let capturedOnDirectionChange: ((d: Direction) => void) | undefined;
+    vi.mocked(engine.playExercise).mockImplementation(
+      async (_config: ExerciseConfig, options: PlayOptions = {}) => {
+        capturedOnDirectionChange = options.onDirectionChange;
+        return fakeHandle();
+      },
+    );
+
+    const { result } = renderHook(() => useExercise());
+
+    await act(async () => {
+      await result.current.play(CONFIG);
+    });
+
+    act(() => {
+      capturedOnDirectionChange?.('down');
+    });
+    expect(result.current.direction).toBe('down');
+
+    act(() => {
+      result.current.stop();
+    });
+    expect(result.current.direction).toBe('up');
+  });
+
   test('play() transitions status to playing and stores the handle', async () => {
     const handle = fakeHandle();
     vi.mocked(engine.playExercise).mockResolvedValue(handle);
@@ -58,7 +118,10 @@ describe('useExercise', () => {
 
     expect(result.current.status).toBe('playing');
     expect(result.current.isLoading).toBe(false);
-    expect(engine.playExercise).toHaveBeenCalledWith(CONFIG);
+    expect(engine.playExercise).toHaveBeenCalledWith(
+      CONFIG,
+      expect.objectContaining({ onDirectionChange: expect.any(Function) }),
+    );
   });
 
   test('pause() and resume() toggle the status while keeping the session alive', async () => {
