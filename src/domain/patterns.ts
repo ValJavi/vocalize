@@ -1,6 +1,8 @@
 import type { Pattern } from './types';
 
 const beat = (semitoneOffset: number) => ({ semitoneOffset, durationBeats: 1 });
+const half = (semitoneOffset: number) => ({ semitoneOffset, durationBeats: 2 });
+const whole = (semitoneOffset: number) => ({ semitoneOffset, durationBeats: 4 });
 
 export const PATTERNS: Pattern[] = [
   {
@@ -16,17 +18,17 @@ export const PATTERNS: Pattern[] = [
   {
     id: 'perfect-fifth',
     name: 'Quinta justa (1-5-1)',
-    steps: [0, 7, 0].map(beat),
+    steps: [0, 7, 0].map(half),
   },
   {
     id: 'octave',
     name: 'Octava (1-8-1)',
-    steps: [0, 12, 0].map(beat),
+    steps: [0, 12, 0].map(half),
   },
   {
     id: 'tonic-sustain',
-    name: 'Repetición de tónica (1-1-1-1)',
-    steps: [0, 0, 0, 0].map(beat),
+    name: 'Tónica sostenida (1)',
+    steps: [whole(0)],
   },
   {
     id: 'five-descending',
