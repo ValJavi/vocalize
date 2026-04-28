@@ -37,14 +37,14 @@ export default function PianoKeyboard({
           return (
             <div
               key={midi}
-              className={`flex-1 rounded-b flex flex-col-reverse items-center pb-1 transition-colors ${
+              className={`flex-1 min-w-0 rounded-b flex flex-col-reverse items-center pb-1 transition-colors ${
                 isActive
                   ? 'bg-emerald-400 text-slate-900'
                   : 'bg-slate-100 text-slate-600'
               }`}
             >
               {isCNote && (
-                <span className="text-[10px] font-medium pointer-events-none">
+                <span className="text-[10px] font-medium pointer-events-none -rotate-90">
                   {midiToLabel(midi, notation)}
                 </span>
               )}
