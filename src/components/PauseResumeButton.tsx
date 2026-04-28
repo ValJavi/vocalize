@@ -12,7 +12,7 @@ export default function PauseResumeButton({
       <button
         onClick={onResume}
         aria-label="Reanudar"
-        className="flex-1 bg-emerald-600 hover:bg-emerald-500 rounded py-3 font-medium transition"
+        className="flex-1 bg-emerald-700 hover:bg-emerald-600 active:bg-emerald-600 rounded py-3 font-medium transition"
       >
         Reanudar
       </button>
@@ -22,7 +22,7 @@ export default function PauseResumeButton({
     <button
       onClick={onPause}
       aria-label="Pausar"
-      className="flex-1 bg-amber-600 hover:bg-amber-500 rounded py-3 font-medium transition"
+      className="flex-1 bg-amber-700 hover:bg-amber-600 active:bg-amber-600 rounded py-3 font-medium transition"
     >
       Pausar
     </button>

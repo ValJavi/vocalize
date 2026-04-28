@@ -92,7 +92,7 @@ export default function ExerciseControls() {
           <div className="mt-3 space-y-2">
             <button
               onClick={() => setBuilder({ mode: 'create' })}
-              className="w-full bg-indigo-600 hover:bg-indigo-500 rounded py-2.5 font-medium transition"
+              className="w-full bg-sky-700 hover:bg-sky-600 active:bg-sky-600 rounded py-2.5 font-medium transition"
             >
               + Crear patrón personalizado
             </button>
