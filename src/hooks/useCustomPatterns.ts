@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   loadCustomPatterns,
   saveCustomPatterns,
@@ -6,11 +6,10 @@ import {
 } from '../domain/customPatterns';
 
 export function useCustomPatterns() {
-  const [patterns, setPatterns] = useState<CustomPattern[]>([]);
-
-  useEffect(() => {
-    setPatterns(loadCustomPatterns());
-  }, []);
+  // Lazy initializer reads localStorage on the first render so saved
+  // patterns appear in the dropdown immediately, without a flash of an
+  // empty "Mis patrones" group.
+  const [patterns, setPatterns] = useState<CustomPattern[]>(loadCustomPatterns);
 
   const add = useCallback((pattern: CustomPattern) => {
     setPatterns((prev) => {

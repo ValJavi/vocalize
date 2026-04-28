@@ -155,7 +155,11 @@ export default function PatternBuilder({
         <div className="mb-4">
           <span className="block text-sm text-slate-300 mb-2">Notas</span>
           <div
-            className="grid items-center gap-x-2 gap-y-2"
+            className="grid items-center gap-2"
+            // Inline style instead of grid-cols-[...] arbitrary class so the
+            // header and every step row share one source of truth for column
+            // widths; the Tailwind arbitrary form rendered the Duración header
+            // misaligned in Chrome.
             style={{ gridTemplateColumns: '1.25rem 1fr 1fr 2rem' }}
           >
             <span aria-hidden="true" />

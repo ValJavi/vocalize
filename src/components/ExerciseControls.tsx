@@ -110,15 +110,17 @@ export default function ExerciseControls() {
         )}
       </div>
 
-      <NotationSelect value={notation} onChange={setNotation} disabled={isActive} />
-      <RangeSelect
-        min={minMidi}
-        max={maxMidi}
-        notation={notation}
-        onMinChange={setMinMidi}
-        onMaxChange={setMaxMidi}
-        disabled={isActive}
-      />
+      <div className="space-y-3">
+        <NotationSelect value={notation} onChange={setNotation} disabled={isActive} />
+        <RangeSelect
+          min={minMidi}
+          max={maxMidi}
+          notation={notation}
+          onMinChange={setMinMidi}
+          onMaxChange={setMaxMidi}
+          disabled={isActive}
+        />
+      </div>
       <TempoSlider
         value={bpm}
         onChange={(next) => {

@@ -34,7 +34,9 @@ describe('useNotation', () => {
     expect(localStorage.getItem(STORAGE_KEY)).toBe('solfege');
   });
 
-  test('falls back to american if a previously-supported value is no longer valid', () => {
+  test('falls back to american when the stored value is outside the current union', () => {
+    // Covers values that were valid in earlier versions of the app
+    // (e.g. 'roman' from a discarded prototype) and any future cut.
     localStorage.setItem(STORAGE_KEY, 'roman');
     const { result } = renderHook(() => useNotation());
     expect(result.current.notation).toBe('american');

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { Notation } from '../domain/notes';
 
 const STORAGE_KEY = 'vocalize-notation';
@@ -15,11 +15,10 @@ function readStored(): Notation {
 }
 
 export function useNotation() {
-  const [notation, setNotationState] = useState<Notation>(DEFAULT_NOTATION);
-
-  useEffect(() => {
-    setNotationState(readStored());
-  }, []);
+  // Lazy initializer reads localStorage on the first render so users with
+  // a stored preference don't see a flash of the default notation before
+  // their saved choice kicks in.
+  const [notation, setNotationState] = useState<Notation>(readStored);
 
   const setNotation = useCallback((next: Notation) => {
     try {
