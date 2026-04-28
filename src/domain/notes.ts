@@ -1,16 +1,14 @@
 import type { Midi } from './types';
 
-export type Notation = 'american' | 'roman' | 'solfege';
+export type Notation = 'american' | 'solfege';
 
 export const NOTATIONS: { id: Notation; label: string }[] = [
   { id: 'american', label: 'Cifrado americano (C, D, E)' },
-  { id: 'roman', label: 'Cifrado por grados (I, II, III)' },
   { id: 'solfege', label: 'Nombres de las notas (Do, Re, Mi)' },
 ];
 
 const NOTE_NAMES_BY_NOTATION: Record<Notation, readonly string[]> = {
   american: ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'],
-  roman: ['I', 'I#', 'II', 'II#', 'III', 'IV', 'IV#', 'V', 'V#', 'VI', 'VI#', 'VII'],
   solfege: ['Do', 'Do#', 'Re', 'Re#', 'Mi', 'Fa', 'Fa#', 'Sol', 'Sol#', 'La', 'La#', 'Si'],
 };
 

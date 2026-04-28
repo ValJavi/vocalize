@@ -21,28 +21,6 @@ describe('midiToLabel (default = american)', () => {
   });
 });
 
-describe('midiToLabel (roman)', () => {
-  test('maps C to I across octaves', () => {
-    expect(midiToLabel(48, 'roman')).toBe('I3');
-    expect(midiToLabel(60, 'roman')).toBe('I4');
-  });
-
-  test('maps every diatonic step', () => {
-    expect(midiToLabel(60, 'roman')).toBe('I4'); // C
-    expect(midiToLabel(62, 'roman')).toBe('II4'); // D
-    expect(midiToLabel(64, 'roman')).toBe('III4'); // E
-    expect(midiToLabel(65, 'roman')).toBe('IV4'); // F
-    expect(midiToLabel(67, 'roman')).toBe('V4'); // G
-    expect(midiToLabel(69, 'roman')).toBe('VI4'); // A
-    expect(midiToLabel(71, 'roman')).toBe('VII4'); // B
-  });
-
-  test('appends sharps to the roman numeral', () => {
-    expect(midiToLabel(61, 'roman')).toBe('I#4');
-    expect(midiToLabel(66, 'roman')).toBe('IV#4');
-  });
-});
-
 describe('midiToLabel (solfege)', () => {
   test('maps the solfege ladder in C', () => {
     expect(midiToLabel(60, 'solfege')).toBe('Do4');
