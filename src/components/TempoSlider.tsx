@@ -4,7 +4,7 @@ export default function TempoSlider({
   value,
   onChange,
   min = 40,
-  max = 160,
+  max = 200,
 }: {
   value: number;
   onChange: (bpm: number) => void;

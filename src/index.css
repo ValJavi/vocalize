@@ -8,5 +8,9 @@ body,
 
 body {
   margin: 0;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: 'Manrope Variable', 'Manrope', ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Manrope-specific OpenType variants:
+     cv11 = straight-tail '4', ss01 = alternate 'g' shape, ss03 = simpler 'l'.
+     Ignored when the system fallback stack is used. */
+  font-feature-settings: 'cv11', 'ss01', 'ss03';
 }

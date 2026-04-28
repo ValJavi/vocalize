@@ -12,7 +12,6 @@ import PlayButton from './PlayButton';
 import StopButton from './StopButton';
 import PauseResumeButton from './PauseResumeButton';
 import RepeatButton from './RepeatButton';
-import SkipButton from './SkipButton';
 import DirectionButton from './DirectionButton';
 import PatternBuilder from './PatternBuilder';
 
@@ -37,7 +36,6 @@ export default function ExerciseControls() {
     pause,
     resume,
     repeat,
-    skip,
     reverseDirection,
     setBpm: setEngineBpm,
     preload,
@@ -94,7 +92,7 @@ export default function ExerciseControls() {
           <div className="mt-3 space-y-2">
             <button
               onClick={() => setBuilder({ mode: 'create' })}
-              className="w-full bg-indigo-600 hover:bg-indigo-500 rounded py-2.5 font-medium transition"
+              className="w-full bg-sky-700 hover:bg-sky-600 active:bg-sky-600 rounded py-2.5 font-medium transition"
             >
               + Crear patrón personalizado
             </button>
@@ -142,9 +140,6 @@ export default function ExerciseControls() {
             </div>
             <div className="flex gap-3">
               <RepeatButton onRepeat={repeat} />
-              {!isPaused && <SkipButton onSkip={skip} />}
-            </div>
-            <div className="flex gap-3">
               <DirectionButton onReverse={reverseDirection} />
             </div>
           </>
